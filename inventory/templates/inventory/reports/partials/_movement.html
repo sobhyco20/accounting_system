@@ -1,0 +1,74 @@
+<div class="card p-3">
+  <h5 class="mb-3">🔄 تقرير حركة الأصناف</h5>
+
+  <form method="get" class="row g-2 align-items-end mb-3">
+    <input type="hidden" name="report" value="movement">
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">من</label>
+      <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">إلى</label>
+      <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">المستودع</label>
+      <select name="warehouse" class="form-select">
+        <option value="">كل المستودعات</option>
+        {% for w in warehouses %}
+          <option value="{{ w.id }}" {% if w.id|stringformat:"s" == warehouse|stringformat:"s" %}selected{% endif %}>{{ w }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">الصنف</label>
+      <select name="product" class="form-select">
+        <option value="">كل الأصناف</option>
+        {% for p in products %}
+          <option value="{{ p.id }}" {% if p.id|stringformat:"s" == product|stringformat:"s" %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-12 text-end">
+      <button class="btn btn-primary px-4">🔍 عرض التقرير</button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th>التاريخ</th>
+          <th>المستودع</th>
+          <th>النوع</th>
+          <th>الصنف</th>
+          <th>الكمية</th>
+          <th>الوحدة</th>
+          <th>التكلفة</th>
+          <th>الإجمالي</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in rows %}
+        <tr>
+          <td>{{ it.transaction.date }}</td>
+          <td>{{ it.transaction.warehouse }}</td>
+          <td>{{ it.transaction.get_transaction_type_display }}</td>
+          <td>{{ it.product }}</td>
+          <td>{{ it.quantity }}</td>
+          <td>{{ it.unit }}</td>
+          <td>{{ it.cost|floatformat:2 }}</td>
+          <td>{{ it.total_cost|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-muted">لا توجد بيانات.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

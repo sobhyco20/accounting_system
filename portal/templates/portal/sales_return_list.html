@@ -1,0 +1,64 @@
+{% extends "portal/base_app.html" %}
+{% block title %}مردودات المبيعات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">مردودات المبيعات</h4>
+  <a class="btn btn-primary" href="{% url 'app_sales_return_create' %}">+ إضافة مردود</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped table-hover mb-0 text-center align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>رقم</th>
+          <th>التاريخ</th>
+          <th>العميل</th>
+          <th>الإجمالي</th>
+          <th>الحالة</th>
+          <th style="width:160px;">إجراءات</th>
+        </tr>
+      </thead>
+
+      <tbody>
+      {% for ret in returns %}
+        <tr>
+          <td>{{ ret.id }}</td>
+
+          <td>
+            <a href="{% url 'app_sales_return_edit' ret.id %}">{{ ret.number }}</a>
+          </td>
+
+          <td>{{ ret.date }}</td>
+          <td>{{ ret.customer }}</td>
+          <td>{{ ret.total_with_tax_value }}</td>
+
+          <td>
+            {% if ret.is_posted %}
+              <span class="badge bg-success">مرحّل</span>
+            {% else %}
+              <span class="badge bg-secondary">مسودة</span>
+            {% endif %}
+          </td>
+
+          <td class="d-flex justify-content-center gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'app_sales_return_edit' ret.id %}">
+              تعديل
+            </a>
+
+            {% if ret.is_posted %}
+              <button class="btn btn-sm btn-outline-secondary" disabled>مقفول</button>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">لا توجد مردودات</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

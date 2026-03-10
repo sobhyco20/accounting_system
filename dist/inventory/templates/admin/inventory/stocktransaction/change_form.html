@@ -1,0 +1,30 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block submit_buttons_top %}
+  {% if not disable_save %}
+    {{ block.super }}
+  {% elif show_post %}
+    <div class="submit-row">
+      <a class="button" href="./post/">🔁 ترحيل</a>
+    </div>
+  {% elif show_unpost %}
+    <div class="submit-row">
+      <a class="button" href="./unpost/" style="background-color: #e60000; color: white;">↩️ إلغاء الترحيل</a>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+  {% if not disable_save %}
+    {{ block.super }}
+  {% elif show_post %}
+    <div class="submit-row">
+      <a class="button" href="./post/">🔁 ترحيل</a>
+    </div>
+  {% elif show_unpost %}
+    <div class="submit-row">
+      <a class="button" href="./unpost/" style="background-color: #e60000; color: white;">↩️ إلغاء الترحيل</a>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+{% load format_filters %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">📊 تقرير المبيعات حسب الصنف والعميل</h2>
+
+<form method="get" class="bg-light p-4 rounded shadow-sm border mb-4">
+    <!-- ✅ صف الفلاتر -->
+    <div class="row mb-3">
+        <!-- من تاريخ -->
+        <div class="col-md-3">
+            <label class="form-label fw-bold">📅 من تاريخ:</label>
+            <input type="date" name="date_from" value="{{ date_from|default:'2026-01-01' }}" class="form-control">
+        </div>
+
+        <!-- إلى تاريخ -->
+        <div class="col-md-3">
+            <label class="form-label fw-bold">📅 إلى تاريخ:</label>
+            <input type="date" name="date_to" value="{{ date_to|default:'2026-12-31' }}" class="form-control">
+        </div>
+
+        <!-- الصنف -->
+        <div class="col-md-3">
+            <label class="form-label fw-bold">📦 الصنف:</label>
+            <select name="product" class="form-control">  <!-- ✅ تم تغيير form-select إلى form-control -->
+                <option value="">-- الكل --</option>
+                {% for product in products %}
+                    <option value="{{ product.id }}" {% if product.id|stringformat:"s" == request.GET.product %}selected{% endif %}>
+                        {{ product.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- العميل -->
+        <div class="col-md-3">
+            <label class="form-label fw-bold">👤 العميل:</label>
+            <select name="customer" class="form-control">  <!-- ✅ تم تغيير form-select إلى form-control -->
+                <option value="">-- الكل --</option>
+                {% for customer in customers %}
+                    <option value="{{ customer.id }}" {% if customer.id|stringformat:"s" == request.GET.customer %}selected{% endif %}>
+                        {{ customer.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- ✅ صف الأزرار -->
+    <div class="row">
+        <div class="col text-end">
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary px-4">🔍 عرض التقرير</button>
+                <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=excel" class="btn btn-success px-4">⬇️ تصدير Excel</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-striped align-middle text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>الصنف</th>
+                    <th>العميل</th>
+                    <th>الكمية</th>
+                    <th>الإجمالي قبل الضريبة</th>
+                    <th>الضريبة</th>
+                    <th>الإجمالي بعد الضريبة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report %}
+                    <tr>
+                        <td>{{ row.product }}</td>
+                        <td>{{ row.customer }}</td>
+                        <td>{{ row.quantity }}</td>
+                        <td>{{ row.total_before_tax|floatformat:2 }}</td>
+                        <td>{{ row.tax_amount|floatformat:2 }}</td>
+                        <td>{{ row.total_with_tax|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-muted text-center">لا توجد بيانات لعرضها</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

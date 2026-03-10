@@ -1,0 +1,36 @@
+{% extends "portal/base_app.html" %}
+{% block title %}تقارير المخزون{% endblock %}
+{% block content %}
+
+<style>
+  .reports-layout{display:flex;gap:16px;min-height:calc(100vh - 140px)}
+  .reports-side{width:280px;flex:0 0 280px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;height:fit-content;position:sticky;top:12px}
+  .reports-side a{display:block;padding:10px 12px;margin-bottom:8px;border-radius:10px;background:#f3f4f6;text-decoration:none;color:#111827;font-weight:700}
+  .reports-side a:hover{background:#e5e7eb}
+  .reports-main{flex:1;min-width:0}
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">📊 تقارير المخزون</h4>
+</div>
+
+<div class="reports-layout">
+  <div class="reports-side">
+    <h5 class="mb-3">📑 التقارير</h5>
+
+    <a href="{% url 'app_inventory_reports' %}?report=movement">🔄 حركة الأصناف</a>
+    <a href="{% url 'app_inventory_reports' %}?report=balances">📦 أرصدة الأصناف</a>
+  </div>
+
+  <div class="reports-main">
+    {% if selected_report == "movement" %}
+      {% include "inventory/reports/partials/_movement.html" %}
+    {% elif selected_report == "balances" %}
+      {% include "inventory/reports/partials/_balances.html" %}
+    {% else %}
+      <div class="alert alert-info">اختر تقريرًا من القائمة لعرضه ✅</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

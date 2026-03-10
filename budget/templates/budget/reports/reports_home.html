@@ -1,0 +1,98 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .reports-container {
+        display: flex;
+        height: 80vh;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .reports-sidebar {
+        width: 250px;
+        background-color: #f9f9f9;
+        border-left: 1px solid #ccc;
+        padding: 15px;
+    }
+
+    .reports-sidebar h3 {
+        margin-top: 0;
+    }
+
+    .reports-sidebar a {
+        display: block;
+        margin-bottom: 10px;
+        color: #0645AD;
+        text-decoration: none;
+        font-size: 15px;
+        cursor: pointer;
+    }
+
+    .reports-sidebar a:hover {
+        text-decoration: underline;
+    }
+
+    .reports-content {
+        flex: 1;
+        padding: 0;
+        position: relative;
+    }
+
+    .reports-content iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    .report-buttons {
+        margin: 10px 0;
+    }
+
+    .report-buttons a,
+    .report-buttons button {
+        margin-right: 10px;
+    }
+</style>
+
+<h1>📊 تقارير الموازنة التقديرية</h1>
+
+<div class="report-buttons">
+    <a href="{% url 'admin:index' %}" class="button">🔙 العودة للوحة التحكم</a>
+    <button onclick="refreshReport()" class="button">🔄 تحديث التقرير</button>
+</div>
+
+<div class="reports-container">
+    <div class="reports-sidebar">
+        <h3>📑 قائمة التقارير</h3>
+        <a onclick="loadReport('{% url "budget:budget_summary_report" %}')">📋 ملخص الموازنة</a>
+        <a onclick="loadReport('{% url "budget:budget_comparison_report" %}')">📊 مقارنة المقدّر بالفعلي</a>
+        <a onclick="loadReport('{% url "budget:budget_by_account_report" %}')">📁 موازنة حسب الحسابات</a>
+        <!-- أضف المزيد حسب الحاجة -->
+    </div>
+    <div class="reports-content">
+        <iframe id="reportFrame" src=""></iframe>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        loadReport("{% url 'budget:budget_summary_report' %}");
+    });
+
+    function loadReport(url) {
+        const frame = document.getElementById("reportFrame");
+        frame.src = url;
+        sessionStorage.setItem("currentBudgetReport", url);
+    }
+
+    function refreshReport() {
+        const url = sessionStorage.getItem("currentBudgetReport");
+        if (url) {
+            document.getElementById("reportFrame").src = url;
+        }
+    }
+</script>
+{% endblock %}

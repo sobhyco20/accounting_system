@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">تقرير الهالك / الفاقد</h2>
+
+    <form method="get" class="form-inline mb-3">
+        <div class="form-group mr-2">
+            <label for="from_date">من تاريخ:</label>
+            <input type="date" id="from_date" name="from_date" class="form-control ml-2"
+                   value="{{ request.GET.from_date|default:'2026-01-01' }}">
+        </div>
+        <div class="form-group mr-2">
+            <label for="to_date">إلى تاريخ:</label>
+            <input type="date" id="to_date" name="to_date" class="form-control ml-2"
+                   value="{{ request.GET.to_date|default:'2026-12-31' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">عرض التقرير</button>
+    </form>
+
+    {% if orders %}
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>رقم أمر الإنتاج</th>
+                    <th>المنتج</th>
+                    <th>الكمية التالفة</th>
+                    <th>مستودع الهالك</th>
+                    <th>تاريخ الأمر</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.product.name }}</td>
+                    <td>{{ order.scrap_quantity }}</td>
+                    <td>{{ order.scrap_warehouse.name }}</td>
+                    <td>{{ order.date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">لا توجد بيانات لعرضها في الفترة المحددة.</div>
+    {% endif %}
+</div>
+{% endblock %}

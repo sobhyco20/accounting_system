@@ -1,0 +1,89 @@
+<div class="container mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">🏢 المشتريات حسب المورد</h4>
+  </div>
+
+  <!-- 🔎 Filters -->
+  <form method="get" class="row gy-3 gx-3 align-items-end mb-4 bg-light p-4 rounded shadow-sm border">
+    <input type="hidden" name="report" value="by_supplier">
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">من تاريخ:</label>
+      <input type="date" name="from_date"
+             value="{{ from_date|default:'2025-01-01' }}"
+             class="form-control">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">إلى تاريخ:</label>
+      <input type="date" name="to_date"
+             value="{{ to_date|default:'2025-12-31' }}"
+             class="form-control">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-bold">المورد:</label>
+      <select name="supplier" class="form-select select2">
+        <option value="">-- كل الموردين --</option>
+        {% for s in suppliers %}
+          <option value="{{ s.id }}"
+            {% if s.id|stringformat:"s" == supplier|stringformat:"s" %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 text-end">
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">🔍 عرض</button>
+
+        {# اختياري: تصدير Excel بنفس البارامترات #}
+        <a class="btn btn-success"
+           href="?report=by_supplier&from_date={{ from_date }}&to_date={{ to_date }}&supplier={{ supplier }}&export=1">
+          ⬇️ Excel
+        </a>
+      </div>
+    </div>
+  </form>
+
+  <!-- 📊 Table -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover table-striped align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th style="white-space:nowrap;">رقم الفاتورة</th>
+          <th style="white-space:nowrap;">التاريخ</th>
+          <th>المورد</th>
+          <th style="white-space:nowrap;">الإجمالي</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for inv in invoices %}
+          <tr>
+            <td class="fw-bold">{{ inv.number }}</td>
+            <td>{{ inv.date }}</td>
+            <td>{{ inv.supplier }}</td>
+            <td class="text-end">{{ inv.amount|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-muted py-4">لا توجد بيانات في الفترة المحددة.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+
+      {% if total_amount is not None %}
+      <tfoot class="table-light fw-bold">
+        <tr>
+          <td colspan="3" class="text-end">الإجمالي:</td>
+          <td class="text-end">{{ total_amount|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+
+</div>

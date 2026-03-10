@@ -1,0 +1,353 @@
+{% extends "portal/base_app.html" %}
+{% load static %}
+{% block title %}فاتورة مبيعات{% endblock %}
+{% block content %}
+
+
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1">{% if invoice %}تعديل فاتورة مبيعات{% else %}فاتورة مبيعات جديدة{% endif %}</h4>
+    {% if invoice %}
+      <div class="text-muted">رقم: <strong>{{ invoice.number }}</strong></div>
+      {% if locked %}
+        <div class="text-danger fw-bold mt-1">🔒 فاتورة مرحّلة ومقفولة</div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'app_sales_invoice_list' %}">رجوع</a>
+
+    {% if invoice %}
+      <a class="btn btn-outline-primary" target="_blank" href="{% url 'sales:invoice_pdf' invoice.id %}">
+        طباعة PDF
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" class="card shadow-sm">
+  {% csrf_token %}
+
+  <div class="card-body">
+    {% if locked %}
+      <div class="alert alert-warning">
+        ⚠️ هذه الفاتورة مرحّلة. لا يمكن تعديل البيانات أو البنود. يمكنك فقط إلغاء الترحيل.
+      </div>
+    {% endif %}
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">التاريخ</label>
+        <input type="date" name="date" class="form-control"
+               value="{% if invoice and invoice.date %}{{ invoice.date|date:'Y-m-d' }}{% endif %}"
+               {% if locked %}disabled{% endif %} required>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">العميل</label>
+        {# ✅ select2 + disabled عند القفل #}
+        <select name="customer" class="form-select select2" {% if locked %}disabled{% endif %} required>
+          <option value="">-- اختر --</option>
+          {% for c in customers %}
+            <option value="{{ c.id }}" {% if invoice and invoice.customer_id == c.id %}selected{% endif %}>
+              {{ c.code }} - {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">المستودع</label>
+        <select name="warehouse" class="form-select select2" {% if locked %}disabled{% endif %} required>
+          <option value="">-- اختر --</option>
+          {% for w in warehouses %}
+            <option value="{{ w.id }}" {% if invoice and invoice.warehouse_id == w.id %}selected{% endif %}>
+              {{ w.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">المندوب</label>
+        <select name="sales_rep" class="form-select select2" {% if locked %}disabled{% endif %}>
+          <option value="">-- بدون --</option>
+          {% for r in reps %}
+            <option value="{{ r.id }}" {% if invoice and invoice.sales_rep_id == r.id %}selected{% endif %}>
+              {{ r.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0">أصناف الفاتورة</h6>
+      <button type="button" class="btn btn-primary btn-sm" id="addRowBtn" {% if locked %}disabled{% endif %}>
+        + إضافة سطر
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle text-center" id="itemsTable">
+        <thead class="table-dark">
+          <tr>
+            <th style="width:48px;">#</th>
+            <th>الصنف</th>
+            <th style="width:110px;">الكمية</th>
+            <th style="width:140px;">السعر</th>
+            <th style="width:120px;">نسبة الضريبة</th>
+            <th style="width:140px;">قبل الضريبة</th>
+            <th style="width:140px;">الضريبة</th>
+            <th style="width:150px;">الإجمالي</th>
+            <th style="width:70px;">حذف</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% if items %}
+            {% for it in items %}
+            <tr>
+              <td class="rowIndex">{{ forloop.counter }}</td>
+
+              <td>
+                <select name="product[]" class="form-select select2 productSelect" required {% if locked %}disabled{% endif %}>
+                  <option value="">-- اختر --</option>
+                  {% for p in products %}
+                    <option value="{{ p.id }}" {% if it.product_id == p.id %}selected{% endif %}>
+                      {{ p.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </td>
+
+              <td>
+                <input type="number" step="0.01" name="qty[]" class="form-control qty"
+                       value="{% if it.quantity is not None %}{{ it.quantity|stringformat:'s' }}{% endif %}"
+                       {% if locked %}readonly{% endif %} required>
+              </td>
+
+              <td>
+                <input type="number" step="0.01" name="price[]" class="form-control price"
+                       value="{% if it.unit_price is not None %}{{ it.unit_price|stringformat:'s' }}{% endif %}"
+                       {% if locked %}readonly{% endif %} required>
+              </td>
+
+              <td>
+                <input type="number" step="0.01" name="tax_rate[]" class="form-control taxRate"
+                       value="{% if it.tax_rate is not None %}{{ it.tax_rate|stringformat:'s' }}{% else %}15.00{% endif %}"
+                       {% if locked %}readonly{% endif %}>
+              </td>
+
+              <td class="subtotalCell">{{ it.total_before_tax|stringformat:'s' }}</td>
+              <td class="taxCell">{{ it.tax_amount|stringformat:'s' }}</td>
+              <td class="totalCell fw-bold">{{ it.total_with_tax|stringformat:'s' }}</td>
+
+              <td>
+                <button type="button" class="btn btn-danger btn-sm removeRow" {% if locked %}disabled{% endif %}>×</button>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td class="rowIndex">1</td>
+              <td>
+                <select name="product[]" class="form-select select2 productSelect" required>
+                  <option value="">-- اختر --</option>
+                  {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><input type="number" step="0.01" name="qty[]" class="form-control qty" value="1" required></td>
+              <td><input type="number" step="0.01" name="price[]" class="form-control price" value="0" required></td>
+              <td><input type="number" step="0.01" name="tax_rate[]" class="form-control taxRate" value="15.00"></td>
+              <td class="subtotalCell">0.00</td>
+              <td class="taxCell">0.00</td>
+              <td class="totalCell fw-bold">0.00</td>
+              <td><button type="button" class="btn btn-danger btn-sm removeRow">×</button></td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row justify-content-end mt-3">
+      <div class="col-md-4">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <span>الإجمالي قبل الضريبة</span>
+              <strong id="sumSubtotal">
+                {% if invoice %}{{ invoice.total_before_tax_value|stringformat:'s' }}{% else %}0.00{% endif %}
+              </strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>إجمالي الضريبة</span>
+              <strong id="sumTax">
+                {% if invoice %}{{ invoice.total_tax_value|stringformat:'s' }}{% else %}0.00{% endif %}
+              </strong>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between">
+              <span class="fw-bold">الإجمالي النهائي</span>
+              <span class="fw-bold" id="sumGrand">
+                {% if invoice %}{{ invoice.total_with_tax_value|stringformat:'s' }}{% else %}0.00{% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card-footer d-flex gap-2">
+    {% if not locked %}
+      <button type="submit" name="action" value="save" class="btn btn-success flex-grow-1">حفظ الفاتورة</button>
+      <button type="submit" name="action" value="save_post" class="btn btn-primary">حفظ وترحيل</button>
+    {% else %}
+      <div class="alert alert-secondary mb-0 flex-grow-1">🔒 الفاتورة مقفولة بعد الترحيل</div>
+    {% endif %}
+
+    {% if invoice and invoice.is_posted %}
+      <button type="submit" name="action" value="unpost" class="btn btn-warning"
+              onclick="return confirm('هل أنت متأكد من إلغاء الترحيل؟ سيتم فتح الفاتورة للتعديل.');">
+        إلغاء الترحيل
+      </button>
+    {% endif %}
+  </div>
+</form>
+
+<script>
+(function(){
+  // ✅ لا تكسر صفحة "جديد"
+  const locked = {% if invoice and invoice.is_posted %}true{% else %}false{% endif %};
+
+  const tableBody = document.querySelector('#itemsTable tbody');
+  const addRowBtn = document.getElementById('addRowBtn');
+
+  function toNum(v){
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function calcRow(tr){
+    const qtyEl = tr.querySelector('.qty');
+    const priceEl = tr.querySelector('.price');
+    const rateEl = tr.querySelector('.taxRate');
+    if(!qtyEl || !priceEl || !rateEl) return;
+
+    const qty = toNum(qtyEl.value);
+    const price = toNum(priceEl.value);
+    const rate = toNum(rateEl.value);
+
+    const subtotal = qty * price;
+    const tax = subtotal * rate / 100.0;
+    const total = subtotal + tax;
+
+    tr.querySelector('.subtotalCell').textContent = subtotal.toFixed(2);
+    tr.querySelector('.taxCell').textContent = tax.toFixed(2);
+    tr.querySelector('.totalCell').textContent = total.toFixed(2);
+  }
+
+  function reindex(){
+    [...tableBody.querySelectorAll('tr')].forEach((tr, i)=>{
+      const idx = tr.querySelector('.rowIndex');
+      if(idx) idx.textContent = (i+1);
+    });
+  }
+
+  function calcAll(){
+    let sSubtotal = 0, sTax = 0, sGrand = 0;
+    [...tableBody.querySelectorAll('tr')].forEach(tr=>{
+      if(tr.querySelector('.qty') && tr.querySelector('.price') && tr.querySelector('.taxRate')){
+        calcRow(tr);
+        sSubtotal += toNum(tr.querySelector('.subtotalCell')?.textContent);
+        sTax += toNum(tr.querySelector('.taxCell')?.textContent);
+        sGrand += toNum(tr.querySelector('.totalCell')?.textContent);
+      }
+    });
+
+    document.getElementById('sumSubtotal').textContent = sSubtotal.toFixed(2);
+    document.getElementById('sumTax').textContent = sTax.toFixed(2);
+    document.getElementById('sumGrand').textContent = sGrand.toFixed(2);
+  }
+
+  function bindRow(tr){
+    tr.querySelectorAll('.qty,.price,.taxRate').forEach(inp=>{
+      inp.addEventListener('input', calcAll);
+    });
+
+    const removeBtn = tr.querySelector('.removeRow');
+    if(removeBtn){
+      removeBtn.addEventListener('click', ()=>{
+        if(locked) return;
+        if(tableBody.querySelectorAll('tr').length > 1){
+          tr.remove();
+          reindex();
+          calcAll();
+        }
+      });
+    }
+  }
+
+  // ✅ اربط صفوف موجودة
+  [...tableBody.querySelectorAll('tr')].forEach(bindRow);
+  reindex();
+
+  // ✅ الحسابات عند التحميل (لو غير مقفولة)
+  if(!locked){
+    calcAll();
+  }
+
+  // ✅ إضافة صف جديد
+  if(addRowBtn){
+    addRowBtn.addEventListener('click', ()=>{
+      if(locked) return;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="rowIndex">0</td>
+        <td>
+          <select name="product[]" class="form-select select2 productSelect" required>
+            <option value="">-- اختر --</option>
+            {% for p in products %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input type="number" step="0.01" name="qty[]" class="form-control qty" value="1" required></td>
+        <td><input type="number" step="0.01" name="price[]" class="form-control price" value="0" required></td>
+        <td><input type="number" step="0.01" name="tax_rate[]" class="form-control taxRate" value="15.00"></td>
+        <td class="subtotalCell">0.00</td>
+        <td class="taxCell">0.00</td>
+        <td class="totalCell fw-bold">0.00</td>
+        <td><button type="button" class="btn btn-danger btn-sm removeRow">×</button></td>
+      `;
+      tableBody.appendChild(tr);
+
+      bindRow(tr);
+      reindex();
+      calcAll();
+
+      // ✅ تفعيل select2 للسطر الجديد
+      if(typeof initSelect2 === "function"){
+        initSelect2(tr);
+      }
+    });
+  }
+
+  // ✅ تفعيل select2 لجميع selects الموجودة (في حال لم يعمل من base_app)
+  if(typeof initSelect2 === "function"){
+    initSelect2();
+  }
+})();
+</script>
+
+
+{% endblock %}

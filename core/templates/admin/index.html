@@ -1,0 +1,106 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static log %}
+
+{% block content %}
+
+<style>
+  .admin-header {
+    display: flex;
+    align-items: center;
+    background-color: #2e3e4e;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    color: white;
+  }
+
+  .admin-header img {
+    height: 60px;
+    margin-left: 20px;
+  }
+
+  .admin-header h1 {
+    font-size: 24px;
+    margin: 0;
+    color: #fff;
+  }
+
+  .custom-admin-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .recent-actions-panel {
+    margin-left: 0;
+    margin-right: auto;
+    width: 300px;
+    background-color: #f8f8f8;
+    padding: 20px;
+    border-radius: 10px;
+  }
+
+  .recent-actions-panel h2 {
+    margin-top: 0;
+  }
+
+  .recent-actions-panel ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .recent-actions-panel li {
+    margin-bottom: 12px;
+    background-color: white;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .recent-actions-panel a {
+    font-weight: bold;
+    text-decoration: none;
+    color: #2c3e50;
+  }
+
+  .recent-actions-panel small {
+    display: block;
+    color: #888;
+    font-size: 0.8em;
+    margin-top: 4px;
+  }
+</style>
+
+<!-- ✅ رأس مخصص يحتوي على الشعار والنص -->
+<div class="admin-header">
+  <img src="{% static 'logo.png' %}" alt="الشعار">
+  <h1>نظام إدارة الشركة</h1>
+</div>
+
+<div class="custom-admin-container">
+
+  <!-- لوحة الإجراءات الأخيرة أقصى اليسار -->
+  <div class="recent-actions-panel">
+    <h2>{% translate 'Recent actions' %}</h2>
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% if not admin_log %}
+      <p>{% translate 'None available' %}</p>
+    {% else %}
+      <ul>
+        {% for entry in admin_log %}
+          <li>
+            {% if entry.is_addition %}➕{% elif entry.is_change %}✏️{% elif entry.is_deletion %}🗑️{% endif %}
+            {% if entry.is_deletion or not entry.get_admin_url %}
+              {{ entry.object_repr }}
+            {% else %}
+              <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+            {% endif %}
+            <small>{{ entry.content_type.name }}</small>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

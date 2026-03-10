@@ -1,0 +1,90 @@
+{% extends "portal/base_app.html" %}
+{% block title %}تفاصيل فاتورة {{ invoice.number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1">فاتورة مبيعات: {{ invoice.number }}</h4>
+    <div class="text-muted">العميل: {{ invoice.customer }} — التاريخ: {{ invoice.date }}</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a class="btn btn-secondary" href="{% url 'sales_invoice_list' %}">رجوع</a>
+    {# اختياري لاحقًا #}
+    {# <a class="btn btn-outline-primary" href="/sales/invoice/{{ invoice.id }}/pdf/">طباعة PDF</a> #}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-3">أصناف الفاتورة</h6>
+
+        <div class="table-responsive">
+          <table class="table table-bordered text-center align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>الصنف</th>
+                <th>الكمية</th>
+                <th>السعر</th>
+                <th>قبل الضريبة</th>
+                <th>الضريبة</th>
+                <th>الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in items %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ it.product }}</td>
+                <td>{{ it.quantity }}</td>
+                <td>{{ it.unit_price }}</td>
+                <td>{{ it.total_before_tax|default:"-" }}</td>
+                <td>{{ it.tax_amount|default:"-" }}</td>
+                <td>
+                  {% if it.total_with_tax %}
+                    {{ it.total_with_tax }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7">لا توجد أصناف</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-3">ملخص الفاتورة</h6>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span>الإجمالي قبل الضريبة</span>
+          <strong>{{ subtotal }}</strong>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span>إجمالي الضريبة</span>
+          <strong>{{ tax_total }}</strong>
+        </div>
+
+        <hr>
+
+        <div class="d-flex justify-content-between">
+          <span class="fw-bold">الإجمالي النهائي</span>
+          <span class="fw-bold">{{ grand_total }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

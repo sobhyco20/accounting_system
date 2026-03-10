@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>الصفحة الرئيسية</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9f9f9;
+            padding: 40px;
+            text-align: center;
+        }
+        h1 {
+            color: #444;
+        }
+        .modules {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 40px;
+            gap: 20px;
+        }
+        .module-card {
+            background-color: white;
+            padding: 20px;
+            width: 200px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            transition: 0.3s;
+            text-decoration: none;
+            color: #222;
+        }
+        .module-card:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <h1>مرحبًا بك في النظام المحاسبي</h1>
+    <div class="modules">
+        <a href="/accounts/" class="module-card">الحسابات</a>
+        <a href="/sales/" class="module-card">المبيعات</a>
+        <a href="/purchases/" class="module-card">المشتريات</a>
+        <a href="/inventory/" class="module-card">المخازن</a>
+        <a href="/manufacturing/" class="module-card">التصنيع</a>
+        <a href="/treasury/" class="module-card">الخزينة</a>
+        <a href="/reports/" class="module-card">التقارير</a>
+        <a href="/admin/" class="module-card">لوحة التحكم</a>
+    </div>
+</body>
+</html>

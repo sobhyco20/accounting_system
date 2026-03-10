@@ -1,0 +1,49 @@
+<div class="card p-3">
+  <h5 class="mb-3">📦 تقرير أرصدة الأصناف</h5>
+
+  <form method="get" class="row g-2 align-items-end mb-3">
+    <input type="hidden" name="report" value="balances">
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">حتى تاريخ</label>
+      <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-bold">المستودع</label>
+      <select name="warehouse" class="form-select">
+        <option value="">كل المستودعات</option>
+        {% for w in warehouses %}
+          <option value="{{ w.id }}" {% if w.id|stringformat:"s" == warehouse|stringformat:"s" %}selected{% endif %}>{{ w }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-12 text-end">
+      <button class="btn btn-primary px-4">🔍 عرض التقرير</button>
+    </div>
+  </form>
+
+  <div class="alert alert-secondary">الرصيد محسوب حتى: <b>{{ as_of|default:to_date }}</b></div>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th>الصنف</th>
+          <th>الرصيد</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.product }}</td>
+          <td class="fw-bold">{{ r.balance }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" class="text-muted">لا توجد أرصدة.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

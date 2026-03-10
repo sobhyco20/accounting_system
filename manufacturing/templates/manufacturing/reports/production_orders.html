@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">📝 تقرير أوامر الإنتاج</h2>
+
+  <!-- فلتر التاريخ -->
+  <form method="get" class="form-inline mb-4 row">
+    <div class="col-md-3">
+      <label>من تاريخ:</label>
+      <input type="date" name="from_date" value="{{ from_date }}" class="form-control" />
+    </div>
+    <div class="col-md-3">
+      <label>إلى تاريخ:</label>
+      <input type="date" name="to_date" value="{{ to_date }}" class="form-control" />
+    </div>
+    <div class="col-md-2 mt-4">
+      <button type="submit" class="btn btn-primary">عرض</button>
+    </div>
+  </form>
+
+  <!-- جدول البيانات -->
+  <table class="table table-bordered table-striped table-hover">
+    <thead class="thead-dark">
+      <tr>
+        <th>رقم الأمر</th>
+        <th>المنتج</th>
+        <th>الكمية المطلوبة</th>
+        <th>الكمية المنتجة</th>
+        <th>التاريخ</th>
+        <th>المستودع النهائي</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td>{{ order.id }}</td>
+        <td>{{ order.product.name }}</td>
+        <td>{{ order.planned_quantity }}</td>
+        <td>{{ order.finished_quantity }}</td>
+        <td>{{ order.date }}</td>
+        <td>{{ order.finished_goods_warehouse.name }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-danger">لا توجد أوامر إنتاج في الفترة المحددة</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p><strong>إجمالي عدد الأوامر:</strong> {{ orders|length }}</p>
+</div>
+{% endblock %}

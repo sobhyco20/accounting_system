@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مردود فاتورة رقم {{ return_invoice.number }}</title>
+    <style>
+        @font-face {
+            font-family: 'Amiri';
+            src: url('{{ font_url }}') format('truetype');
+        }
+
+        body {
+            font-family: 'Amiri', 'DejaVu Sans', sans-serif;
+            direction: rtl;
+            text-align: right;
+            margin: 40px;
+            font-size: 14px;
+            color: #000;
+            background-color: #fff;
+        }
+
+        .company-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+
+        .company-header img {
+            height: 80px;
+        }
+
+        .company-details {
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .header {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .info-box {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            font-size: 15px;
+            width: 100%;
+            box-shadow: 1px 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .info-box p {
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 4px;
+        }
+
+        .info-box p:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .info-value {
+            color: #000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        thead {
+            background-color: #f0f0f0;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        .total-box {
+            width: 40%;
+            margin-left: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fdfdfd;
+            padding: 15px 20px;
+            font-size: 15px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .total-box p {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #ddd;
+            padding-bottom: 4px;
+        }
+
+        .total-box p:last-child {
+            font-weight: bold;
+            border-bottom: none;
+        }
+
+        .total-box span.label {
+            color: #333;
+        }
+
+        .total-box span.value {
+            min-width: 80px;
+            text-align: left;
+            direction: ltr;
+        }
+
+        .footer {
+            clear: both;
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="company-header">
+    {% if company.logo %}
+        <img src="{% static 'logo.png' %}" alt="شعار الشركة">
+    {% endif %}
+    <div class="company-details">
+        <strong>{{ company.name }}</strong><br>
+        {{ company.address }}<br>
+        هاتف: {{ company.phone }} | بريد: {{ company.email }}<br>
+        {{ company.website }}
+    </div>
+</div>
+
+<div class="header">مردود فاتورة مبيعات</div>
+<div class="info-box">
+    <p><span class="info-label">العميل:</span> <span class="info-value">{{ return_invoice.customer.name }}</span></p>
+    <p><strong>الرقم الضريبي للعميل:</strong> {{ return_invoice.customer.tax_number }}</p>
+    <p><span class="info-label">التاريخ:</span> <span class="info-value">{{ return_invoice.date }}</span></p>
+    <p><span class="info-label">رقم الفاتورة:</span> <span class="info-value">{{ return_invoice.number }}</span></p>
+</div>
+
+
+<table>
+    <thead>
+        <tr>
+            <th>م</th>
+            <th>المنتج</th>
+            <th>الكمية</th>
+            <th>السعر</th>
+            <th>الإجمالي قبل الضريبة</th>
+            <th>الضريبة</th>
+            <th>الإجمالي بعد الضريبة</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for line in return_invoice.details.all %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ line.product.name }}</td>
+            <td>{{ line.quantity }}</td>
+            <td>{{ line.price|floatformat:2 }}</td>
+            <td>{{ line.total_before_tax|floatformat:2 }}</td>
+            <td>{{ line.tax_amount|floatformat:2 }}</td>
+            <td>{{ line.total_with_tax|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">لا توجد أصناف في مردود الفاتورة.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<div class="total-box">
+    <p><span class="label">الإجمالي قبل الضريبة:</span> <span class="value">{{ return_invoice.total_before_tax_value|floatformat:2 }}</span></p>
+    <p><span class="label">قيمة الضريبة:</span> <span class="value">{{ return_invoice.total_tax_value|floatformat:2 }}</span></p>
+    <p><span class="label">الإجمالي الكلي:</span> <span class="value">{{ return_invoice.total_with_tax_value|floatformat:2 }}</span></p>
+</div>
+
+<div class="footer">
+    {% if company.footer_note %}
+        {{ company.footer_note }}
+    {% else %}
+        تم إصدار هذه الفاتورة بواسطة النظام في تاريخ {{ return_invoice.date }}
+    {% endif %}
+</div>
+
+</body>
+</html>

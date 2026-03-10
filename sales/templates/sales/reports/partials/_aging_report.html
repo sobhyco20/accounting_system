@@ -1,0 +1,28 @@
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">⏳ أعمار الديون (مبسط)</h2>
+
+  <div class="alert alert-info">
+    هذا التقرير الآن يعرض “رصيد العميل” (فواتير - سداد). إذا تريد تقسيم 0-30 / 31-60 / 61-90 / 90+ أضيفه لك.
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped text-center align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>العميل</th>
+          <th>الرصيد</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.customer.name }}</td>
+            <td class="text-end fw-bold">{{ r.balance|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="2" class="text-muted">لا توجد بيانات.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

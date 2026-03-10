@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="card" style="padding: 20px; background-color: #fff;">
+    <h2>🏭 تقرير المنتجات التامة</h2>
+
+    <form method="get" class="form-inline mb-3" style="margin-bottom: 20px;">
+        <div style="display: inline-block; margin-right: 10px;">
+            <label for="from_date">من تاريخ:</label>
+            <input type="date" id="from_date" name="from_date" class="form-control"
+                   value="{{ request.GET.from_date|default:'2026-01-01' }}">
+        </div>
+        <div style="display: inline-block; margin-right: 10px;">
+            <label for="to_date">إلى تاريخ:</label>
+            <input type="date" id="to_date" name="to_date" class="form-control"
+                   value="{{ request.GET.to_date|default:'2026-12-31' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">🔍 عرض</button>
+    </form>
+
+    {% if orders %}
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>رقم أمر الإنتاج</th>
+                    <th>اسم المنتج</th>
+                    <th>الكمية المنتجة</th>
+                    <th>الوحدة</th>
+                    <th>تاريخ الإنتاج</th>
+                    <th>مستودع الإيداع</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>{{ order.code }}</td>
+                        <td>{{ order.product.name }}</td>
+                        <td>{{ order.quantity }}</td>
+                        <td>{{ order.product.unit.name }}</td>
+                        <td>{{ order.date|date:"Y-m-d" }}</td>
+                        <td>{{ order.output_warehouse.name }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>لا توجد منتجات تامة في الفترة المحددة.</p>
+    {% endif %}
+</div>
+{% endblock %}

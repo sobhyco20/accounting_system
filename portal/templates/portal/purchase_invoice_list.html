@@ -1,0 +1,72 @@
+{% extends "portal/base_app.html" %}
+{% block title %}فواتير المشتريات{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">فواتير المشتريات</h4>
+  <a class="btn btn-success" href="{% url 'app_purchase_invoice_create' %}">➕ فاتورة مشتريات جديدة</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form class="row g-2">
+      <div class="col-md-4">
+        <input name="search" value="{{ request.GET.search }}" class="form-control" placeholder="بحث بالرقم أو المورد">
+      </div>
+      <div class="col-md-3">
+        <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="form-control">
+      </div>
+      <div class="col-md-3">
+        <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="form-control">
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-dark w-100">تصفية</button>
+        <a class="btn btn-outline-secondary w-100" href="{% url 'app_purchase_invoice_list' %}">مسح</a>
+      </div>
+    </form>
+
+    <div class="table-responsive mt-3">
+      <table class="table table-striped table-hover mb-0 text-center align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th style="width:70px;">#</th>
+            <th>رقم</th>
+            <th style="width:140px;">التاريخ</th>
+            <th>المورد</th>
+            <th style="width:160px;">الإجمالي</th>
+            <th style="width:120px;">الحالة</th>
+            <th style="width:220px;">إجراءات</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for inv in invoices %}
+          <tr>
+            <td>{{ inv.id }}</td>
+            <td class="fw-bold">{{ inv.number }}</td>
+            <td>{{ inv.date|date:"Y-m-d" }}</td>
+            <td class="text-start">{{ inv.supplier }}</td>
+            <td class="fw-bold">{{ inv.total_with_tax_value|floatformat:2 }}</td>
+            <td>
+              {% if inv.is_posted %}
+                <span class="badge text-bg-success">مرحّلة</span>
+              {% else %}
+                <span class="badge text-bg-secondary">غير مرحّلة</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a class="btn btn-sm btn-primary" href="{% url 'app_purchase_invoice_edit' inv.id %}">✏️ تعديل</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7">لا توجد فواتير</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

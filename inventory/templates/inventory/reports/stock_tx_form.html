@@ -1,0 +1,171 @@
+{% extends "portal/base_app.html" %}
+{% block title %}حركة مخزون{% endblock %}
+{% block content %}
+
+<style>
+  .cardx{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px}
+  .table td,.table th{vertical-align:middle}
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0">🔄 حركة مخزون</h4>
+    {% if tx %}<div class="text-muted small">رقم: #{{ tx.id }}</div>{% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'app_stock_tx_list' %}">⬅️ رجوع</a>
+
+    {% if tx %}
+      {% if locked %}
+        <a class="btn btn-warning" href="{% url 'app_stock_tx_unpost' tx.id %}">⛔ إلغاء الترحيل</a>
+      {% else %}
+        <a class="btn btn-success" href="{% url 'app_stock_tx_post' tx.id %}">✅ ترحيل</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="cardx">
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label fw-bold">التاريخ</label>
+        <input type="date" name="date"
+               value="{% if tx %}{{ tx.date|date:'Y-m-d' }}{% endif %}"
+               class="form-control" {% if locked %}disabled{% endif %} required>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label fw-bold">المستودع</label>
+        <select name="warehouse" class="form-select" {% if locked %}disabled{% endif %} required>
+          <option value="">اختر...</option>
+          {% for w in warehouses %}
+            <option value="{{ w.id }}" {% if tx and tx.warehouse_id == w.id %}selected{% endif %}>{{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-bold">نوع الحركة</label>
+        <select name="transaction_type" class="form-select" {% if locked %}disabled{% endif %} required>
+          {% for k,v in tx_types %}
+            <option value="{{ k }}" {% if tx and tx.transaction_type == k %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end justify-content-end">
+        <button class="btn btn-primary w-100" {% if locked %}disabled{% endif %}>💾 حفظ</button>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label fw-bold">ملاحظات</label>
+        <input name="notes" class="form-control" value="{% if tx %}{{ tx.notes }}{% endif %}" {% if locked %}disabled{% endif %}>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">📦 بنود الحركة</h5>
+      <button type="button" class="btn btn-outline-primary btn-sm" onclick="addRow()" {% if locked %}disabled{% endif %}>➕ إضافة سطر</button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle text-center" id="itemsTable">
+        <thead class="table-dark">
+          <tr>
+            <th style="min-width:240px">الصنف</th>
+            <th style="min-width:160px">الوحدة</th>
+            <th style="width:140px">الكمية</th>
+            <th style="width:160px">التكلفة</th>
+            <th style="width:160px">الإجمالي</th>
+            <th style="width:80px">حذف</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+          <tr>
+            <td>
+              <select name="product[]" class="form-select" {% if locked %}disabled{% endif %} required>
+                <option value="">اختر...</option>
+                {% for p in products %}
+                  <option value="{{ p.id }}" {% if it.product_id == p.id %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td>
+              <select name="unit[]" class="form-select" {% if locked %}disabled{% endif %}>
+                <option value="">—</option>
+                {% for u in units %}
+                  <option value="{{ u.id }}" {% if it.unit_id == u.id %}selected{% endif %}>{{ u }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td><input name="qty[]" type="number" step="0.01" class="form-control qty" value="{{ it.quantity }}" {% if locked %}disabled{% endif %}></td>
+            <td><input name="cost[]" type="number" step="0.01" class="form-control cost" value="{{ it.cost }}" {% if locked %}disabled{% endif %}></td>
+            <td class="total-cell fw-bold">0</td>
+            <td><button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)" {% if locked %}disabled{% endif %}>✖</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td colspan="4" class="text-end fw-bold">الإجمالي:</td>
+            <td class="fw-bold" id="grandTotal">0</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  function money(v){ v=parseFloat(v||0); return v.toFixed(2); }
+  function recalc(){
+    let grand=0;
+    document.querySelectorAll("#itemsTable tbody tr").forEach(r=>{
+      const qty = r.querySelector(".qty")?.value || 0;
+      const cost = r.querySelector(".cost")?.value || 0;
+      const t = parseFloat(qty||0) * parseFloat(cost||0);
+      r.querySelector(".total-cell").textContent = money(t);
+      grand += t;
+    });
+    document.getElementById("grandTotal").textContent = money(grand);
+  }
+  function removeRow(btn){ btn.closest("tr").remove(); recalc(); }
+  function addRow(){
+    const tbody=document.querySelector("#itemsTable tbody");
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <select name="product[]" class="form-select" required>
+          <option value="">اختر...</option>
+          {% for p in products %}<option value="{{ p.id }}">{{ p }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="unit[]" class="form-select">
+          <option value="">—</option>
+          {% for u in units %}<option value="{{ u.id }}">{{ u }}</option>{% endfor %}
+        </select>
+      </td>
+      <td><input name="qty[]" type="number" step="0.01" class="form-control qty" value="0"></td>
+      <td><input name="cost[]" type="number" step="0.01" class="form-control cost" value="0"></td>
+      <td class="total-cell fw-bold">0</td>
+      <td><button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)">✖</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+  }
+  document.addEventListener("input",(e)=>{
+    if(e.target.classList.contains("qty")||e.target.classList.contains("cost")) recalc();
+  });
+  document.addEventListener("DOMContentLoaded",recalc);
+</script>
+
+{% endblock %}

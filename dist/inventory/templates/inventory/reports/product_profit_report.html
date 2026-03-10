@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير ربحية الأصناف</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f5f5f5; padding: 20px; direction: rtl; text-align: right; }
+        h2 { text-align: center; color: #333; }
+        form { margin-bottom: 20px; background-color: #fff; padding: 15px; border: 1px solid #ccc; }
+        label { margin-right: 10px; }
+        select, input[type="date"] { margin: 5px 10px; padding: 5px; }
+        button { padding: 6px 15px; background-color: #1976d2; color: white; border: none; cursor: pointer; margin-right: 10px; }
+        a.button-link { padding: 6px 15px; background-color: #555; color: white; text-decoration: none; margin-right: 10px; }
+        table { width: 100%; border-collapse: collapse; background-color: #fff; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; font-size: 14px; text-align: center; }
+        thead { background-color: #1976d2; color: white; }
+        tbody tr:nth-child(even) { background-color: #f0f0f0; }
+        tfoot { background-color: #e0e0e0; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h2>تقرير ربحية الأصناف</h2>
+
+<form method="get">
+    <label>الصنف:</label>
+    <select name="product">
+        <option value="">-- الكل --</option>
+        {% for p in products %}
+            <option value="{{ p.id }}" {% if request.GET.product == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label>المندوب:</label>
+    <select name="rep">
+        <option value="">-- الكل --</option>
+        {% for r in reps %}
+            <option value="{{ r.id }}" {% if request.GET.rep == r.id|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label>📅 من تاريخ:</label>
+    <input type="date" name="date_from" value="{{ request.GET.date_from|default:'2026-01-01' }}">
+
+    <label>📅 إلى تاريخ:</label>
+    <input type="date" name="date_to" value="{{ request.GET.date_to|default:'2026-12-31' }}">
+
+    <button type="submit">عرض التقرير</button>
+    <button type="submit" name="export" value="1">📥 تصدير Excel</button>
+    <a href="{% url 'admin:index' %}" class="button-link">⬅ العودة للوحة التحكم</a>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>الصنف</th>
+            <th>المندوب</th>
+            <th>الكمية المباعة</th>
+            <th>الكمية المرتجعة</th>
+            <th>صافي الكمية</th>
+            <th>قيمة المبيعات</th>
+            <th>قيمة المردودات</th>
+            <th>صافي المبيعات</th>
+            <th>متوسط سعر البيع</th>
+            <th>متوسط التكلفة</th>
+            <th>فرق السعر</th>
+            <th>مجمل الربح</th>
+            <th>هامش الربح %</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in results %}
+            <tr>
+                <td>{{ r.product.name }}</td>
+                <td>{{ r.rep }}</td>
+                <td>{{ r.sales_qty|floatformat:2 }}</td>
+                <td>{{ r.return_qty|floatformat:2 }}</td>
+                <td>{{ r.net_qty|floatformat:2 }}</td>
+                <td>{{ r.sales_total|floatformat:2 }}</td>
+                <td>{{ r.return_total|floatformat:2 }}</td>
+                <td>{{ r.net_sales|floatformat:2 }}</td>
+                <td>{{ r.average_price|floatformat:2 }}</td>
+                <td>{{ r.average_cost|floatformat:2 }}</td>
+                <td>{{ r.price_diff|floatformat:2 }}</td>
+                <td>{{ r.profit|floatformat:2 }}</td>
+                <td>{{ r.margin|floatformat:2 }}%</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="13">لا توجد بيانات</td></tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="2">الإجمالي</td>
+            <td>{{ total_sales_qty|floatformat:2 }}</td>
+            <td>{{ total_return_qty|floatformat:2 }}</td>
+            <td>{{ total_net_qty|floatformat:2 }}</td>
+            <td>{{ total_sales|floatformat:2 }}</td>
+            <td>{{ total_returns|floatformat:2 }}</td>
+            <td>{{ total_net_sales|floatformat:2 }}</td>
+            <td colspan="2">-</td>
+            <td>-</td>
+            <td>{{ total_profit|floatformat:2 }}</td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+
+</body>
+</html>

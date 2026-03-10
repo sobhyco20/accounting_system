@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">📦 تقرير المشتريات حسب المورد والصنف</h2>
+
+    <form method="get" class="row gy-3 gx-4 align-items-end mb-4 bg-light p-4 rounded shadow-sm border">
+        <div class="col-lg-3 col-md-6">
+            
+            <label class="form-label fw-bold">من تاريخ:</label>
+            <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-bold">إلى تاريخ:</label>
+            <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+        </div>
+                <div class="col-12">
+                    <div class="p-3 border rounded shadow-sm bg-white">
+                        <div class="row g-3 align-items-center">
+
+                            <div class="col-lg-6">
+                                <label class="form-label fw-bold">👤 المورد:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white">
+                                        <i class="bi bi-person-vcard"></i>
+                                    </span>
+                                    <select name="supplier" class="form-select border-primary" style="min-height: 45px;">
+                                        <option value="">الكل</option>
+                                        {% for supplier in suppliers %}
+                                            <option value="{{ supplier.id }}" {% if supplier_id == supplier.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ supplier.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label class="form-label fw-bold">📦 الصنف:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success text-white">
+                                        <i class="bi bi-box-seam"></i>
+                                    </span>
+                                    <select name="product" class="form-select border-success" style="min-height: 45px;">
+                                        <option value="">الكل</option>
+                                        {% for product in products %}
+                                            <option value="{{ product.id }}" {% if product_id == product.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ product.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                    
+        <div class="col-12 text-end mt-3">
+            <div class="btn-group" role="group">
+                <button type="submit" class="btn btn-primary px-4">🔍 عرض التقرير</button>
+                <a href="?start_date={{ start_date }}&end_date={{ end_date }}&supplier={{ supplier_id }}&product={{ product_id }}&export=1" class="btn btn-success px-4">
+                    ⬇️ تصدير Excel
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-striped align-middle">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>المورد</th>
+                    <th>الصنف</th>
+                    <th>الكمية الإجمالية</th>
+                    <th>الإجمالي قبل الضريبة</th>
+                    <th>الضريبة</th>
+                    <th>الإجمالي مع الضريبة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in grouped_data %}
+                <tr>
+                    <td>{{ row.supplier_name }}</td>
+                    <td>{{ row.product_name }}</td>
+                    <td class="text-center">{{ row.total_quantity }}</td>
+                    <td class="text-end">{{ row.total_before_tax|floatformat:2 }}</td>
+                    <td class="text-end">{{ row.total_tax|floatformat:2 }}</td>
+                    <td class="text-end">{{ row.total_with_tax|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">لا توجد بيانات للفترة المحددة.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

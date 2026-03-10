@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">📊 تقرير عمولات المندوبين</h2>
+
+    <!-- ✅ نموذج الفلاتر -->
+    <form method="get" class="bg-light p-4 rounded shadow-sm border mb-4">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">📅 من تاريخ:</label>
+                <input type="date" name="start_date" value="{{ request.GET.start_date|default:'2026-01-01' }}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">📅 إلى تاريخ:</label>
+                <input type="date" name="end_date" value="{{ request.GET.end_date|default:'2026-12-31' }}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">👤 المندوب:</label>
+                <select name="rep" class="form-control">
+                    <option value="">-- الكل --</option>
+                    {% for r in form.fields.rep.queryset %}
+                        <option value="{{ r.id }}" {% if r.id|stringformat:"s" == request.GET.rep %}selected{% endif %}>{{ r.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- ✅ أزرار -->
+        <div class="row">
+            <div class="col text-end">
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary px-4">🔍 عرض التقرير</button>
+                    <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=excel" class="btn btn-success px-4">⬇️ تصدير Excel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- ✅ الجدول -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>المندوب</th>
+                    <th>إجمالي المبيعات (قبل الضريبة)</th>
+                    <th>العمولة</th>
+                    <th>تفاصيل العمولة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in results %}
+                    <tr>
+                        <td>{{ row.rep.name }}</td>
+                        <td>{{ row.sales_total|floatformat:2 }}</td>
+                        <td>{{ row.commission|floatformat:2 }}</td>
+                        <td class="text-start">
+                            <ul class="mb-0">
+                                {% for d in row.details %}
+                                    <li>
+                                        {% if d.type %}
+                                            {{ d.type }} - {{ d.percentage }}٪ = {{ d.amount|floatformat:2 }}
+                                        {% elif d.tier %}
+                                            {{ d.tier }} = {{ d.amount|floatformat:2 }}
+                                        {% elif d.note %}
+                                            {{ d.note }}
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-muted">لا توجد بيانات لعرضها</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

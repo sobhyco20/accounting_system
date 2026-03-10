@@ -1,0 +1,88 @@
+{% extends "portal/base_app.html" %}
+{% load static %}
+
+{% block title %}تقارير المبيعات{% endblock %}
+
+{% block content %}
+<style>
+  .reports-layout{
+    display: flex;
+    gap: 16px;
+    min-height: calc(100vh - 140px);
+  }
+  .reports-side{
+    width: 280px;
+    flex: 0 0 280px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px;
+    height: fit-content;
+    position: sticky;
+    top: 12px;
+  }
+  .reports-side h5{
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  .reports-side a{
+    display:block;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    text-decoration:none;
+    color:#111827;
+    font-weight:600;
+  }
+  .reports-side a:hover{ background:#e5e7eb; }
+
+  .reports-main{
+    flex: 1;
+    min-width: 0;
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">📊 تقارير إدارة المبيعات</h4>
+</div>
+
+<div class="reports-layout">
+
+  {# قائمة التقارير داخل الصفحة (مثل القديمة لكن بدون iframe) #}
+  <div class="reports-side">
+    <h5 class="mb-3">📑 التقارير</h5>
+
+    <a href="{% url 'app_sales_reports' %}?report=sales">🧾 تقرير المبيعات</a>
+    <a href="{% url 'app_sales_reports' %}?report=by_customer">💰 تقرير المبيعات بالعميل</a>
+    <a href="{% url 'app_sales_reports' %}?report=ledger">📜 كشف حساب عميل</a>
+    <a href="{% url 'app_sales_reports' %}?report=by_product_customer">📦 تقرير المبيعات بالأصناف والعميل</a>
+    <a href="{% url 'app_sales_reports' %}?report=rep">🧑‍💼 تقرير المندوبين (مبيعات + مشتريات)</a>
+    <a href="{% url 'app_sales_reports' %}?report=commission">💼 تقرير عمولات المندوبين</a>
+    <a href="{% url 'app_sales_reports' %}?report=aging">⏳ أعمار الديون</a>
+  </div>
+
+  <div class="reports-main">
+
+    {% if selected_report == "sales" %}
+      {% include "sales/reports/partials/_sales_report.html" %}
+    {% elif selected_report == "by_customer" %}
+      {% include "sales/reports/partials/_sales_by_customer_report.html" %}
+    {% elif selected_report == "ledger" %}
+      {% include "sales/reports/partials/_customer_ledger_report.html" %}
+    {% elif selected_report == "by_product_customer" %}
+      {% include "sales/reports/partials/_sales_by_product_and_customer.html" %}
+    {% elif selected_report == "rep" %}
+      {% include "sales/reports/partials/_rep_sales_purchases_report.html" %}
+    {% elif selected_report == "commission" %}
+      {% include "sales/reports/partials/_commission_report.html" %}
+    {% elif selected_report == "aging" %}
+      {% include "sales/reports/partials/_aging_report.html" %}
+    {% else %}
+      <div class="alert alert-info">اختر تقريرًا من القائمة لعرضه داخل البورتال ✅</div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

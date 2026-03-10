@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4">📊 تقرير حركة الصندوق</h3>
+
+    <form method="get" class="form-inline mb-4">
+        <div class="form-group mx-2">
+            <label for="from_date">من:</label>
+            <input type="date" name="from_date" value="{{ from_date|date:'Y-m-d' }}" class="form-control mx-2">
+        </div>
+
+        <div class="form-group mx-2">
+            <label for="to_date">إلى:</label>
+            <input type="date" name="to_date" value="{{ to_date|date:'Y-m-d' }}" class="form-control mx-2">
+        </div>
+
+        <div class="form-group mx-2">
+            <label for="box">الصندوق:</label>
+            <select name="box" id="box" class="form-control mx-2">
+                <option value="">جميع الصناديق</option>
+                {% for box in boxes %}
+                    <option value="{{ box.id }}" {% if box.id|stringformat:"s" == selected_box %}selected{% endif %}>
+                        {{ box.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group mx-2">
+            <label for="employee">الموظف:</label>
+            <select name="employee" id="employee" class="form-control mx-2">
+                <option value="">جميع الموظفين</option>
+                {% for emp in employees %}
+                    <option value="{{ emp.id }}" {% if emp.id == selected_employee %}selected{% endif %}>
+                        {{ emp.employee_code }} - {{ emp.full_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary mx-2">عرض</button>
+    </form>
+
+<table class="table table-bordered table-striped">
+    <thead class="thead-dark">
+        <tr>
+            <th>الصندوق</th>
+            <th>الرصيد الافتتاحي</th>
+            <th>إجمالي القبض</th>
+            <th>إجمالي الصرف</th>
+            <th>الرصيد الختامي</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for box, row in data.items %}
+        <tr class="table-primary font-weight-bold">
+            <td>{{ box.name }}</td>
+            <td>{{ row.opening|floatformat:2 }}</td>
+            <td>{{ row.receipt|floatformat:2 }}</td>
+            <td>{{ row.payment|floatformat:2 }}</td>
+            <td>{{ row.balance|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td colspan="5">
+                <table class="table table-sm table-hover table-bordered mb-0">
+                    <thead>
+                        <tr class="table-secondary">
+                            <th>التاريخ</th>
+                            <th>النوع</th>
+                            <th>الرقم</th>
+                            <th>الموظف المسؤول</th>
+                            <th>الوصف</th>
+                            <th>المبلغ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for voucher in row.vouchers %}
+                        <tr>
+                            <td>{{ voucher.date }}</td>
+                            <td>
+                                {% if voucher.voucher_type == 'receipt' %}
+                                    قبض
+                                {% else %}
+                                    صرف
+                                {% endif %}
+                            </td>
+                            <td>{{ voucher.code }}</td>
+                            <td>
+                                {{ voucher.responsible.employee_code }} - {{ voucher.responsible.full_name }}
+                            </td>
+                            <td>{{ voucher.description }}</td>
+                            <td>{{ voucher.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">لا توجد حركات.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">لا توجد بيانات.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</div>
+{% endblock %}

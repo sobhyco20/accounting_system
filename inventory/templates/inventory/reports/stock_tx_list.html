@@ -1,0 +1,53 @@
+{% extends "portal/base_app.html" %}
+{% block title %}حركات المخزون{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">🔄 حركات المخزون</h4>
+  <a class="btn btn-primary" href="{% url 'app_stock_tx_create' %}">➕ إضافة حركة</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-4">
+    <input name="q" value="{{ q }}" class="form-control" placeholder="بحث بالمستودع / الملاحظات...">
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-outline-secondary w-100">بحث</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-striped align-middle text-center">
+    <thead class="table-dark">
+      <tr>
+        <th>التاريخ</th>
+        <th>المستودع</th>
+        <th>النوع</th>
+        <th>الحالة</th>
+        <th style="width:140px">إجراءات</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.date }}</td>
+        <td>{{ r.warehouse }}</td>
+        <td>{{ r.get_transaction_type_display }}</td>
+        <td>
+          {% if r.is_posted %}
+            <span class="badge bg-success">مرحّل</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">غير مرحّل</span>
+          {% endif %}
+        </td>
+        <td>
+          <a class="btn btn-sm btn-outline-primary"
+             href="{% url 'app_stock_tx_edit' r.id %}">فتح</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-muted">لا يوجد بيانات.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

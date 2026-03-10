@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block content %}
+<h2 style="margin-bottom: 25px;">🏦 الميزانية العمومية</h2>
+
+<!-- ✅ فلاتر -->
+<form method="get" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+    <div>
+        <label>من تاريخ:</label><br>
+        <input type="date" name="from" value="{{ date_from }}">
+    </div>
+    <div>
+        <label>إلى تاريخ:</label><br>
+        <input type="date" name="to" value="{{ date_to }}">
+    </div>
+    <div>
+        <label>المستوى:</label><br>
+        <select name="level">
+            <option value="">-- جميع المستويات --</option>
+            {% for lvl in "12345" %}
+                <option value="{{ lvl }}" {% if selected_level == lvl %}selected{% endif %}>{{ lvl }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div style="align-self: end;">
+        <button type="submit">🔍 عرض</button>
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=excel" class="button">⬇️ Excel</a>
+    </div>
+</form>
+
+<!-- 📊 جدول الميزانية -->
+<div style="overflow-x: auto;">
+    <table border="1" cellspacing="0" cellpadding="5" style="width: 100%; border-collapse: collapse; text-align: center;">
+        <thead style="background-color: #343a40; color: white;">
+            <tr>
+                <th>رمز</th>
+                <th style="text-align: right;">اسم الحساب</th>
+                <th>المستوى</th>
+                <th>النوع</th>
+                <th>الرصيد</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for acc in rows %}
+                <tr>
+                    <td>{{ acc.code }}</td>
+                    <td style="text-align: right; padding-right: {{ acc.level|add:"1"|add:"1" }}0px;">
+                        {% if acc.level == 1 %}
+                            🟢
+                        {% elif acc.level == 2 %}
+                            🔵
+                        {% elif acc.level == 3 %}
+                            🟣
+                        {% elif acc.level == 4 %}
+                            🟠
+                        {% else %}
+                            ⚫
+                        {% endif %}
+                        {{ acc.name }}
+                    </td>
+                    <td>{{ acc.level }}</td>
+                    <td>{{ acc.statement_type }}</td>
+                    <td>{{ acc.balance|floatformat:2 }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center; color: #777;">لا توجد بيانات</td>
+                </tr>
+            {% endfor %}
+                    </tbody>
+            <tfoot style="background-color: #f8f9fa; font-weight: bold;">
+                {% if selected_level %}
+                    <tr>
+                        <td colspan="4" style="text-align: left;">📌 إجمالي المستوى {{ selected_level }}</td>
+                        <td>{{ level_totals|get_item:selected_level|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="text-align: left;">📌 صافي الربح / الخسارة</td>
+                        <td>{{ net_profit|floatformat:2 }}</td>
+                    </tr>
+                {% else %}
+                    {% for level in "1234" %}
+                        <tr>
+                            <td colspan="4" style="text-align: left;">📌 إجمالي المستوى {{ level }}</td>
+                            <td>{{ level_totals|get_item:level|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <td colspan="4" style="text-align: left;">📌 صافي الربح / الخسارة</td>
+                        <td>{{ net_profit|floatformat:2 }}</td>
+                    </tr>
+                {% endif %}
+            </tfoot>
+    </table>
+</div>
+{% endblock %}

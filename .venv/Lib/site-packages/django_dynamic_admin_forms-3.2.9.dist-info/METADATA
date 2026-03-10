@@ -1,0 +1,257 @@
+Metadata-Version: 2.1
+Name: django-dynamic-admin-forms
+Version: 3.2.9
+Summary: Add simple dynamic interaction to the otherwise static django admin.
+Author-email: Ambient Digital <hello@ambient.digital>, Fabian Binz <fabian.binz@ambient.digital>
+Description-Content-Type: text/markdown
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Django
+Classifier: Framework :: Django :: 4.2
+Classifier: Framework :: Django :: 5.1
+Classifier: Framework :: Django :: 5.2
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Utilities
+Requires-Dist: Django>=4.2
+Requires-Dist: typer~=0.12 ; extra == "dev"
+Requires-Dist: pytest-django~=4.9 ; extra == "dev"
+Requires-Dist: pytest-mock~=3.14 ; extra == "dev"
+Requires-Dist: coverage~=7.6 ; extra == "dev"
+Requires-Dist: pre-commit~=4.2 ; extra == "dev"
+Requires-Dist: ruff~=0.11 ; extra == "dev"
+Requires-Dist: sphinx~=7.1 ; extra == "dev"
+Requires-Dist: sphinx-rtd-theme~=2.0 ; extra == "dev"
+Requires-Dist: m2r2==0.3.3.post2 ; extra == "dev"
+Requires-Dist: mistune<2.0.0 ; extra == "dev"
+Requires-Dist: flit~=3.12 ; extra == "dev"
+Requires-Dist: keyring~=25.6 ; extra == "dev"
+Requires-Dist: ambient-package-update ; extra == "dev"
+Requires-Dist: unittest-parametrize~=1.4 ; extra == "dev"
+Project-URL: Bugtracker, https://github.com/ambient-innovation/django-dynamic-admin/issues
+Project-URL: Changelog, https://django-dynamic-admin-forms.readthedocs.io/en/latest/features/changelog.html
+Project-URL: Documentation, https://django-dynamic-admin-forms.readthedocs.io/en/latest/index.html
+Project-URL: Homepage, https://github.com/ambient-innovation/django-dynamic-admin/
+Project-URL: Maintained by, https://ambient.digital/
+Provides-Extra: dev
+
+[![PyPI release](https://img.shields.io/pypi/v/django-dynamic-admin-forms.svg)](https://pypi.org/project/django-dynamic-admin-forms/)
+[![Downloads](https://static.pepy.tech/badge/django-dynamic-admin-forms)](https://pepy.tech/project/django-dynamic-admin-forms)
+[![Coverage](https://img.shields.io/badge/Coverage-100.0%25-success)](https://github.com/ambient-innovation/django-dynamic-admin/actions?workflow=CI)
+[![Linting](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Coding Style](https://img.shields.io/badge/code%20style-Ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Documentation Status](https://readthedocs.org/projects/django-dynamic-admin-forms/badge/?version=latest)](https://django-dynamic-admin-forms.readthedocs.io/en/latest/?badge=latest)
+
+Add simple interactions to the otherwise static django admin.
+
+* [PyPI](https://pypi.org/project/django-dynamic-admin-forms/)
+* [GitHub](https://github.com/ambient-innovation/django-dynamic-admin)
+* [Full documentation](https://django-dynamic-admin-forms.readthedocs.io/en/latest/index.html)
+* Creator & Maintainer: [Ambient Digital](https://ambient.digital/)
+
+
+# django-dynamic-admin-forms
+
+Add simple interactions to the otherwise static django admin.
+
+[![demo.gif](https://i.postimg.cc/YCf7LV2m/demo.gif)](https://postimg.cc/Yv9ZJdWp)
+
+## Installation
+
+- Install the package via pip:
+
+    ```pip install django-dynamic-admin-forms```
+
+    or via pipenv:
+
+    ```pipenv install django-dynamic-admin-forms```
+- Add the module to `INSTALLED_APPS`:
+    ```python
+    INSTALLED_APPS = (
+        "django_dynamic_admin_forms",
+        "django.contrib.admin",
+    )
+    ```
+    Ensure that the `dynamic_admin_forms` comes before the
+    default `django.contrib.admin` in the list of installed apps,
+    because otherwise the templates, which are overwritten by `dynamic_admin_forms`
+    won't be found.
+- Ensure that the `dynamic_admin_forms` templates are found via using `APP_DIRS` setting:
+  ```python
+  TEMPLATES = [
+      {
+          "BACKEND": "django.template.backends.django.DjangoTemplates",
+          "APP_DIRS": True,
+      },
+  ]
+  ```
+- Run `python manage.py collectstatic` to include this apps Javascript code in your `settings.STATIC_ROOT` directory
+
+## Usage
+- Add the `django_dynamic_admin_forms.DynamicModelAdminMixin` to your admin classes
+- Add the `django_dynamic_admin_forms.urls` to your urls
+  ```python
+  from django.contrib import admin
+  from django.urls import path, include
+
+  urlpatterns = [
+      path("admin/", admin.site.urls),
+      path("dynamic-admin-form/", include("django_dynamic_admin_forms.urls")),
+  ]
+  ```
+- In addition to the standard `fields` declaration, specify a list of `dynamic_fields`
+- For each dynamic field, add a method `get_dynamic_{field_name}_field` to the admin
+  - Input: `data: Dict[str, Any]` - the cleaned form data
+  - Output:
+    - `queryset: Optional[Queryset]` - The values to select from
+    - `value: Any` - The value, the field should have (must be compatible to the field type)
+    - `hidden: Bool` - True, if field should be hidden
+
+- A rather non-sensical example:
+  ```python
+  from django.contrib import admin
+
+  from .models import MyModel
+  from django_dynamic_admin_forms.admin import DynamicModelAdminMixin
+
+
+  @admin.register(MyModel)
+  class MyModelAdmin(DynamicModelAdminMixin, admin.ModelAdmin):
+      fields = ("name", "city")
+      dynamic_fields = ("city",)
+
+      def get_dynamic_city_field(self, data):
+          # automatically choose first city that matches first letter of name
+          name = data.get("name")
+          if not name:
+              queryset = City.objects.all()
+              value = data.get("city")
+          else:
+              queryset = City.objects.filter(name__startswith=name[0])
+              value = queryset.first()
+          hidden = not queryset.exists()
+          return queryset, value, hidden
+  ```
+
+## How it works
+Whenever a dynamic form changes, an event handler makes a request to a special endpoint, which returns new HTML to swap
+into  the existing form. This new HTML is directly generated by `django.contrib.admin`, so we only have to set the
+outerHTML of the correct HTML elements to update the form.
+
+## Limitations
+- does not work in conjunction with inlines
+- does not validate that the selected value is really part of the original queryset
+  - if anybody can modify your DOM, they could potentially inject invalid values
+  - you have to write `Model.clean()` methods to guard against that
+- only tested with Django 3.2
+
+## Development
+
+For local development, create a virtual environment
+in the `testproj` folder:
+```shell
+$ cd testproj
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+$ cd ..
+$ flit install --symlink
+```
+Now the package should be available in your virtual environment
+and any changes should be directly visible.
+
+Alternatively, copy the directory `dynamic_admin_forms`
+into any normal django project, so that the python interpreter
+finds the local version instead of the installed (old) version.
+
+## Running E2E tests
+
+To run end-to-end tests locally:
+```shell
+$ cd testproj
+$ python manage.py runserver 0.0.0.0:8000 &  # start server
+$ python manage.py loaddata fixtures/fixtures-dev.json
+$ cd ../e2e
+$ yarn install  # or npm install (only needed first time)
+$ yarn cypress  # or npm run cypress
+```
+
+## Installation
+
+- Install the package via pip:
+
+   `pip install django-dynamic-admin-forms`
+
+   or via pipenv:
+
+   `pipenv install django-dynamic-admin-forms`
+
+- Add the module to `INSTALLED_APPS`:
+    ```python
+    INSTALLED_APPS = (
+        "django_dynamic_admin_forms",
+        "django.contrib.admin",
+    )
+    ```
+    Ensure that the `dynamic_admin_forms` comes before the
+    default `django.contrib.admin` in the list of installed apps,
+    because otherwise the templates, which are overwritten by `dynamic_admin_forms`
+    won't be found.
+
+- Ensure that the `dynamic_admin_forms` templates are found via using `APP_DIRS` setting:
+  ```python
+  TEMPLATES = [
+      {
+          "BACKEND": "django.template.backends.django.DjangoTemplates",
+          "APP_DIRS": True,
+      },
+  ]
+  ```
+
+- Run `python manage.py collectstatic` to include this apps Javascript code in your `settings.STATIC_ROOT` directory
+
+### Publish to ReadTheDocs.io
+
+- Fetch the latest changes in GitHub mirror and push them
+- Trigger new build at ReadTheDocs.io (follow instructions in admin panel at RTD) if the GitHub webhook is not yet set
+  up.
+
+### Publish to PyPi
+
+- Update documentation about new/changed functionality
+
+- Update the `Changelog`
+
+- Increment version in main `__init__.py`
+
+- Create pull request / merge to main
+
+- This project uses the flit package to publish to PyPI. Thus, publishing should be as easy as running:
+  ```
+  flit publish
+  ```
+
+  To publish to TestPyPI use the following to ensure that you have set up your .pypirc as
+  shown [here](https://flit.readthedocs.io/en/latest/upload.html#using-pypirc) and use the following command:
+
+  ```
+  flit publish --repository testpypi
+  ```
+
+### Maintenance
+
+Please note that this package supports the [ambient-package-update](https://pypi.org/project/ambient-package-update/).
+So you don't have to worry about the maintenance of this package. This updater is rendering all important
+configuration and setup files. It works similar to well-known updaters like `pyupgrade` or `django-upgrade`.
+
+To run an update, refer to the [documentation page](https://pypi.org/project/ambient-package-update/)
+of the "ambient-package-update".
+

@@ -1,0 +1,68 @@
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">📜 كشف حساب عميل</h2>
+
+  <form method="get" class="row gy-3 gx-4 align-items-end mb-4 bg-light p-4 rounded shadow-sm border">
+    <input type="hidden" name="report" value="ledger">
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">من تاريخ:</label>
+      <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label fw-bold">إلى تاريخ:</label>
+      <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-bold">العميل:</label>
+      <select name="customer" class="form-select" required>
+        <option value="">-- اختر --</option>
+        {% for cust in customers %}
+          <option value="{{ cust.id }}" {% if cust.id|stringformat:"s" == customer|stringformat:"s" %}selected{% endif %}>
+            {{ cust.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 text-end">
+      <button type="submit" class="btn btn-primary w-100">🔍 عرض</button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped text-center align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>التاريخ</th>
+          <th>المرجع</th>
+          <th>النوع</th>
+          <th>مدين</th>
+          <th>دائن</th>
+          <th>الرصيد</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.date }}</td>
+            <td>{{ r.ref }}</td>
+            <td>{{ r.type }}</td>
+            <td class="text-end">{{ r.debit|floatformat:2 }}</td>
+            <td class="text-end">{{ r.credit|floatformat:2 }}</td>
+            <td class="text-end fw-bold">{{ r.balance|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted">لا توجد حركات.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light fw-bold">
+        <tr>
+          <td colspan="5" class="text-end">الرصيد الختامي:</td>
+          <td class="text-end">{{ ending_balance|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>

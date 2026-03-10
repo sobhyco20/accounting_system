@@ -1,0 +1,14 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools %}
+  {{ block.super }}
+  {% if show_post %}
+    <li>
+      <a class="button" href="../post/">📌 ترحيل</a>
+    </li>
+  {% elif show_unpost %}
+    <li>
+      <a class="button" href="../unpost/">🚫 إلغاء الترحيل</a>
+    </li>
+  {% endif %}
+{% endblock %}

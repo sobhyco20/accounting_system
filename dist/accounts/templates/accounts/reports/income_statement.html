@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<style>
+    .level-1 { background-color: #e6f2ff; font-weight: bold; }
+    .level-2 { background-color: #f0f9e8; }
+    .level-3 { background-color: #fff9e6; }
+    .level-4 { background-color: #fff0f0; }
+    .level-5 { background-color: #f8f8f8; }
+</style>
+
+<div class="container mt-4">
+    <h2 class="text-center mb-4">📄 قائمة الدخل  </h2>
+
+    <!-- ✅ فلاتر التقرير -->
+    <form method="get" class="bg-light p-4 rounded shadow-sm mb-4 border">
+        <div class="row gy-3 gx-4">
+
+            <!-- 📅 من تاريخ -->
+            <div class="col-md-3">
+                <div class="form-floating h-100">
+                    <input type="date" id="from" name="from" value="{{ date_from }}" class="form-control h-100">
+                    <label for="from">من تاريخ</label>
+                </div>
+            </div>
+
+            <!-- 📅 إلى تاريخ -->
+            <div class="col-md-3">
+                <div class="form-floating h-100">
+                    <input type="date" id="to" name="to" value="{{ date_to }}" class="form-control h-100">
+                    <label for="to">إلى تاريخ</label>
+                </div>
+            </div>
+
+            <!-- 🎚️ مستوى الحساب -->
+            <div class="col-md-3">
+                <div class="form-floating h-100">
+                    <select id="level" name="level" class="form-select h-100">
+                        <option value="">-- الكل --</option>
+                        {% for lvl in "12345" %}
+                            <option value="{{ lvl }}" {% if selected_level == lvl %}selected{% endif %}>{{ lvl }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="level">المستوى</label>
+                </div>
+            </div>
+
+            <!-- 🔘 إخفاء الحسابات ذات الرصيد صفر -->
+            <div class="col-md-3 d-flex align-items-center">
+                <div class="form-check ms-2">
+                    <input type="checkbox" class="form-check-input" id="hide_zero" name="hide_zero" value="1" {% if hide_zero %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="hide_zero">  --إخفاء الحسابات ذات الرصيد صفر-  </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔘 الأزرار -->
+        <div class="row mt-4">
+            <div class="col-md-12 text-end">
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">🔍 عرض</button>
+                    <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=excel" class="btn btn-success">⬇️ Excel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+
+    <!-- ✅ جدول التقرير حسب التصنيف -->
+    {% for direction, items in grouped_data.items %}
+        {% if items %}
+            <h4 class="mt-5 mb-2">📘 {{ direction }}</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover text-center align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>الكود</th>
+                            <th class="text-start">اسم الحساب</th>
+                            <th>المستوى</th>
+                            <th>الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in items %}
+                            {% if not hide_zero or row.balance != 0 %}
+                                <tr class="level-{{ row.level }}">
+                                    <td>{{ row.code }}</td>
+                                    <td class="text-start" style="padding-right: {{ row.level|add:"1"|add:"1" }}0px">
+                                        {{ row.name }}
+                                    </td>
+                                    <td>{{ row.level }}</td>
+                                    <td>{{ row.balance|floatformat:2 }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    {% empty %}
+        <div class="alert alert-warning text-center mt-4">لا توجد بيانات مطابقة للفلترة المحددة.</div>
+    {% endfor %}
+
+    <!-- ✅ صافي الربح أو الخسارة -->
+    <div class="alert alert-info text-end mt-4 fs-5">
+        <strong>📌 صافي الربح / (الخسارة):</strong> {{ net_income|floatformat:2 }}
+    </div>
+</div>
+{% endblock %}

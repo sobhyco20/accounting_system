@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="container">
+  <h2 class="text-center my-4">📋 تقرير الإجازات الشهرية للموظفين</h2>
+
+  <form method="get" class="row g-3 mb-4">
+
+    <div class="col-md-3">
+      <label for="department" class="form-label">الإدارة:</label>
+      <select name="department" id="department" class="form-select">
+        <option value="">-- الكل --</option>
+        {% for dep in departments %}
+        <option value="{{ dep.id }}" {% if selected_department == dep.id %}selected{% endif %}>
+          {{ dep.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label for="employee" class="form-label">الموظف:</label>
+      <select name="employee" id="employee" class="form-select">
+        <option value="">-- الكل --</option>
+        {% for emp in employees %}
+        <option value="{{ emp.id }}" {% if selected_employee == emp.id %}selected{% endif %}>
+          {{ emp.full_name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label for="month" class="form-label">الشهر:</label>
+      <select name="month" id="month" class="form-select">
+        {% for m in months %}
+        <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label for="year" class="form-label">السنة:</label>
+      <select name="year" id="year" class="form-select">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary w-100">عرض</button>
+    </div>
+  </form>
+
+  <table class="table table-bordered table-striped">
+    <thead class="table-light">
+      <tr>
+        <th>الموظف</th>
+        <th>القسم</th>
+        <th>الإدارة</th>
+        <th>عدد الأيام</th>
+        <th>من</th>
+        <th>إلى</th>
+        <th>نوع الإجازة</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for leave in leaves %}
+      <tr>
+        <td>{{ leave.employee.full_name }}</td>
+        <td>{{ leave.employee.division.name|default:"-" }}</td>
+        <td>{{ leave.employee.department.name|default:"-" }}</td>
+        <td>{{ leave.days }}</td>
+        <td>{{ leave.start_date|date:"Y-m-d" }}</td>
+        <td>{{ leave.end_date|date:"Y-m-d" }}</td>
+        <td>{{ leave.get_leave_type_display }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center text-muted">لا توجد إجازات لهذا الشهر.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

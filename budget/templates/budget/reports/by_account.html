@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load budget_extras %}
+
+{% block content %}
+<style>
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .container-fluid {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    h1 {
+        font-size: 20px;
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .form-select, .btn {
+        font-size: 14px;
+    }
+
+    .table {
+        font-size: 13px;
+        width: 100% !important;
+    }
+
+    td.text-end {
+        direction: ltr;
+    }
+</style>
+
+<h1>📊 تقرير الموازنة حسب الحساب</h1>
+
+<form method="get" class="row g-3 mb-4 justify-content-center">
+    <div class="col-md-4">
+        <label class="form-label">الحساب:</label>
+        <select name="account" class="form-select" onchange="this.form.submit()">
+            <option value="">-- جميع الحسابات --</option>
+            {% for account in all_accounts %}
+                <option value="{{ account.id }}" {% if account.id == selected_account %}selected{% endif %}>
+                    {{ account.code }} - {{ account.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">الشهر:</label>
+        <select name="month" class="form-select" onchange="this.form.submit()">
+            <option value="">-- كل الأشهر --</option>
+            {% for month in months %}
+                <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
+                    {{ month|title }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-sm table-striped text-center align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>الحساب</th>
+                {% for month in months %}
+                    {% if not selected_month or selected_month == month %}
+                        <th>{{ month|title }}</th>
+                    {% endif %}
+                {% endfor %}
+                <th>الإجمالي</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+                <tr style="background-color: {{ row.account.level|bg_color }};">
+                    <td class="text-start">
+                        <strong>{{ row.account.code }}</strong> - {{ row.account.name }}
+                    </td>
+                    {% for month in months %}
+                        {% if not selected_month or selected_month == month %}
+                            <td class="text-end">{{ row.monthly|get_item:month|floatformat:0|intcomma }}</td>
+                        {% endif %}
+                    {% endfor %}
+                    <td class="text-end text-success fw-bold">{{ row.total|floatformat:0|intcomma }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="20">لا توجد بيانات</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

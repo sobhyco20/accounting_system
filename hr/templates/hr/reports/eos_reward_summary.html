@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">📄 تقرير مستحق مكافأة نهاية الخدمة</h2>
+
+    <form method="get" class="row g-3 align-items-end bg-light p-3 rounded shadow-sm mb-4">
+        <div class="col-md-4">
+            <label for="department" class="form-label">الإدارة:</label>
+            <select name="department" id="department" class="form-select">
+                <option value="">كل الإدارات</option>
+                {% for id, name in departments %}
+                    <option value="{{ id }}" {% if selected_department == id %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label for="to_date" class="form-label">حتى تاريخ:</label>
+            <input type="date" name="to_date" id="to_date" class="form-control" value="{{ to_date|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100">📊 عرض التقرير</button>
+        </div>
+    </form>
+
+    {% if data %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>الموظف</th>
+                    <th>الإدارة</th>
+                    <th>تاريخ التعيين</th>
+                    <th>مدة الخدمة</th>
+                    <th>الراتب الأساسي</th>
+                    <th>السياسة</th>
+                    <th>المستحق</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td>{{ row.employee_name }}</td>
+                    <td>{{ row.department }}</td>
+                    <td>{{ row.hire_date|date:"Y-m-d" }}</td>
+                    <td>{{ row.years }} سنة {{ row.months }} شهر {{ row.days }} يوم</td>
+                    <td>{{ row.salary|floatformat:2|intcomma }}</td>
+                    <td>{{ row.policy }}</td>
+                    <td><strong class="text-success">{{ row.reward|floatformat:2|intcomma }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="alert alert-info text-center mt-4">لا توجد بيانات لعرضها.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}تقرير القيمة المضافة{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">تقرير القيمة المضافة</h2>
+
+        <form method="get" class="row mb-4">
+            <div class="col-md-4">
+                <label>من تاريخ:</label>
+                <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label>إلى تاريخ:</label>
+                <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary me-2">عرض التقرير</button>
+                <button type="submit" name="export" value="excel" class="btn btn-success">💾 تصدير إلى Excel</button>
+            </div>
+        </form>
+
+    <h4 class="mt-5">📤 فواتير المبيعات</h4>
+    <table class="table table-bordered table-sm">
+        <thead class="table-light">
+            <tr>
+                <th>رقم الفاتورة</th>
+                <th>التاريخ</th>
+                <th>العميل</th>
+                <th>قبل الضريبة</th>
+                <th>الضريبة</th>
+                <th>بعد الضريبة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in sales %}
+            <tr>
+                <td>{{ invoice.number }}</td>
+                <td>{{ invoice.date }}</td>
+                <td>{{ invoice.customer }}</td>
+                <td>{{ invoice.total_before_tax_value|floatformat:2 }}</td>
+                <td>{{ invoice.total_tax_value|floatformat:2 }}</td>
+                <td>{{ invoice.total_with_tax_value|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">لا توجد بيانات</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4 class="mt-5">↩️ مردودات المبيعات</h4>
+    <table class="table table-bordered table-sm">
+        <thead class="table-light">
+            <tr>
+                <th>رقم الفاتورة</th>
+                <th>التاريخ</th>
+                <th>العميل</th>
+                <th>قبل الضريبة</th>
+                <th>الضريبة</th>
+                <th>بعد الضريبة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ret in sales_returns %}
+            <tr>
+                <td>{{ ret.number }}</td>
+                <td>{{ ret.date }}</td>
+                <td>{{ ret.customer }}</td>
+                <td>{{ ret.total_before_tax_value|floatformat:2 }}</td>
+                <td>{{ ret.total_tax_value|floatformat:2 }}</td>
+                <td>{{ ret.total_with_tax_value|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">لا توجد بيانات</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4 class="mt-5">📥 فواتير المشتريات</h4>
+    <table class="table table-bordered table-sm">
+        <thead class="table-light">
+            <tr>
+                <th>رقم الفاتورة</th>
+                <th>التاريخ</th>
+                <th>المورد</th>
+                <th>قبل الضريبة</th>
+                <th>الضريبة</th>
+                <th>بعد الضريبة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in purchases %}
+            <tr>
+                <td>{{ invoice.number }}</td>
+                <td>{{ invoice.date }}</td>
+                <td>{{ invoice.supplier }}</td>
+                <td>{{ invoice.total_before_tax_value|floatformat:2 }}</td>
+                <td>{{ invoice.total_tax_value|floatformat:2 }}</td>
+                <td>{{ invoice.total_with_tax_value|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">لا توجد بيانات</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4 class="mt-5">↩️ مردودات المشتريات</h4>
+    <table class="table table-bordered table-sm">
+        <thead class="table-light">
+            <tr>
+                <th>رقم الفاتورة</th>
+                <th>التاريخ</th>
+                <th>المورد</th>
+                <th>قبل الضريبة</th>
+                <th>الضريبة</th>
+                <th>بعد الضريبة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ret in purchase_returns %}
+            <tr>
+                <td>{{ ret.number }}</td>
+                <td>{{ ret.date }}</td>
+                <td>{{ ret.supplier }}</td>
+                <td>{{ ret.total_before_tax_value|floatformat:2 }}</td>
+                <td>{{ ret.total_tax_value|floatformat:2 }}</td>
+                <td>{{ ret.total_with_tax_value|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center">لا توجد بيانات</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4 class="mt-5 text-center">الملخص</h4>
+    <table class="table table-bordered w-50 mx-auto">
+        <tr>
+            <th>إجمالي ضريبة المبيعات</th>
+            <td>{{ total_sales_vat|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <th>إجمالي ضريبة المشتريات</th>
+            <td>{{ total_purchase_vat|floatformat:2 }}</td>
+        </tr>
+        <tr class="table-info">
+            <th>صافي القيمة المضافة المستحقة</th>
+            <td><strong>{{ vat_difference|floatformat:2 }}</strong></td>
+        </tr>
+    </table>
+</div>
+{% endblock %}

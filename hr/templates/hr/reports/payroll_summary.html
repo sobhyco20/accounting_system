@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير الرواتب الشهرية</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <style>
+        body {
+            direction: rtl;
+            text-align: right;
+            padding: 30px;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .filter-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .filter-form select {
+            min-width: 150px;
+        }
+        table th, table td {
+            vertical-align: middle !important;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h2>📊 تقرير الرواتب الشهرية</h2>
+
+<form method="get" class="filter-form">
+    <select name="department" class="form-select">
+        <option value="">-- الإدارة: الكل --</option>
+        {% for dept in departments %}
+            <option value="{{ dept.id }}" {% if dept.id == selected_department %}selected{% endif %}>{{ dept.name }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="employee" class="form-select">
+        <option value="">-- الموظف: الكل --</option>
+        {% for emp in employees %}
+            <option value="{{ emp.id }}" {% if emp.id == selected_employee %}selected{% endif %}>{{ emp.full_name }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="month" class="form-select">
+        {% for m in months %}
+            <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="year" class="form-select">
+        {% for y in years %}
+            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">عرض التقرير</button>
+</form>
+
+{% if batch %}
+    <table class="table table-bordered table-hover bg-white">
+        <thead class="table-dark">
+            <tr>
+                <th>الموظف</th>
+                <th>القسم</th>
+                <th>الإدارة</th>
+                <th>الراتب الأساسي</th>
+                <th>بدلات</th>
+                <th>خصومات</th>
+                <th>سلف</th>
+                <th>صافي الراتب</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>{{ line.employee.full_name }}</td>
+                    <td>{{ line.employee.division.name|default:"-" }}</td>
+                    <td>{{ line.employee.department.name|default:"-" }}</td>
+                    <td>{{ line.base_salary|default:0|floatformat:2 }}</td>
+                    <td>{{ line.total_allowances|default:0|floatformat:2 }}</td>
+                    <td>{{ line.deductions|default:0|floatformat:2 }}</td>
+                    <td>{{ line.advance_deduction|default:0|floatformat:2 }}</td>
+                    <td><strong>{{ line.net_salary|default:0|floatformat:2 }}</strong></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="alert alert-warning text-center">
+        لا توجد بيانات رواتب لهذا الشهر والسنة.
+    </div>
+{% endif %}
+
+</body>
+</html>
+{% endblock %}
