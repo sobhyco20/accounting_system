@@ -19,15 +19,13 @@ def env(name, default=None):
 # =========================================================
 SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-change-me")
 
-DEBUG = env("DJANGO_DEBUG", "False") == "True"
+DEBUG = False
 
 ALLOWED_HOSTS = [
-    h.strip()
-    for h in env(
-        "DJANGO_ALLOWED_HOSTS",
-        "127.0.0.1,localhost,.onrender.com"
-    ).split(",")
-    if h.strip()
+    "127.0.0.1",
+    "localhost",
+    "accounting-system-8pwy.onrender.com",
+    ".onrender.com",
 ]
 
 
