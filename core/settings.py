@@ -19,11 +19,14 @@ def env(name, default=None):
 # =========================================================
 SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-insecure-change-me")
 
-DEBUG = env("DJANGO_DEBUG", "True") == "True"
+DEBUG = env("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
     h.strip()
-    for h in env("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    for h in env(
+        "DJANGO_ALLOWED_HOSTS",
+        "127.0.0.1,localhost,.onrender.com"
+    ).split(",")
     if h.strip()
 ]
 
@@ -61,6 +64,7 @@ INSTALLED_APPS = [
 # =========================================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # مهم لـ Render
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -141,6 +145,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# مهم لـ WhiteNoise
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -154,7 +161,7 @@ LOGOUT_REDIRECT_URL = "login"
 
 
 # =========================================================
-# SECURITY SETTINGS (Production Ready)
+# SECURITY SETTINGS
 # =========================================================
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
@@ -162,12 +169,10 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-    # HSTS (فعّلها بعد تأكد SSL يعمل)
     SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "0"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-    # CSRF Trusted Domains
     _csrf = env("CSRF_TRUSTED_ORIGINS", "")
     CSRF_TRUSTED_ORIGINS = [
         x.strip() for x in _csrf.split(",") if x.strip()
@@ -175,7 +180,6 @@ if not DEBUG:
 
     X_FRAME_OPTIONS = "SAMEORIGIN"
 else:
-    # أثناء التطوير
     X_FRAME_OPTIONS = "ALLOWALL"
 
 
