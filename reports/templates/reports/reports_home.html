@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>الصفحة الموحدة للتقارير</title>
+
+    <!-- Bootstrap من CDN (إذا لم يكن عندك ملف محلي) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .sidebar {
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #ffffff;
+            border-left: 1px solid #ddd;
+        }
+        .report-frame {
+            width: 100%;
+            height: 100vh;
+            border: none;
+            background-color: #ffffff;
+        }
+        .app-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- القائمة الجانبية -->
+        <div class="col-md-3 col-lg-2 sidebar p-3">
+            <div class="app-title mb-3 text-center">
+                📊 تقارير النظام
+            </div>
+
+            <h6 class="text-muted mt-3 mb-2">استهلاك المواد الخام</h6>
+            <div class="list-group mb-3">
+                <div class="list-group mb-3">
+
+                    <a href="{% url 'raw_material_consumption_summary' %}"
+                       target="report_frame"
+                       class="list-group-item list-group-item-action">
+                        📈 تقرير تجميعي لاستهلاك المواد الخام
+                    </a>
+
+                    <a href="{% url 'raw_material_consumption_detail' %}"
+                       target="report_frame"
+                       class="list-group-item list-group-item-action">
+                        📃 تقرير تفصيلي لاستهلاك المواد الخام
+                    </a>
+
+                    <a href="{% url 'raw_material_usage_by_product' %}"
+                       target="report_frame"
+                       class="list-group-item list-group-item-action">
+                        📌 تقرير توزيع المادة الخام على المنتجات
+                    </a>
+
+                    <a href="{% url 'raw_material_consumption_with_manufactured_detail' %}"
+                       target="report_frame"
+                       class="list-group-item list-group-item-action">
+                        📦 تقرير تفصيلي لاستهلاك المواد الخام + تفكيك المواد المصنعة
+                    </a>
+
+                    <a href="{% url 'product_cost_breakdown' %}"
+                       target="report_frame"
+                       class="list-group-item list-group-item-action">
+                        💰 تقرير تكلفة المنتج من الوصفة
+                    </a>
+
+                    <a href="{% url 'product_cost_flat' %}"
+                       target="report_frame"
+                       class="list-group-item list-group-item-action">
+                        🧾 تقرير تكلفة المنتج (تجميعي بالوحدات)
+                    </a>
+
+                    <a href="{% url 'product_cost_with_big_units' %}"
+                       target="report_frame"
+                       class="list-group-item list-group-item-action">
+                        🧮 تقرير تكلفة المنتج (وحدات الشراء الكبيرة)
+                    </a>
+                </div>
+            </div>
+            <h6 class="text-muted mt-4 mb-2">تقارير المشتريات</h6>
+            <div class="list-group mb-3">
+                <a href="{% url 'purchase_price_comparison' %}"
+                   target="report_frame"
+                   class="list-group-item list-group-item-action">
+                    💹 تقرير مقارنة أسعار المشتريات بين الشهور
+                </a>
+
+            </div>
+            <h6 class="text-muted mt-4 mb-2">القوائم المالية</h6>
+            <div class="list-group mb-3">
+                <a href="{% url 'income_statement' %}"
+                target="report_frame"
+                class="list-group-item list-group-item-action">
+                    📄 قائمة الدخل
+                </a>
+            </div>
+            <div class="list-group mb-3">
+            <a href="{% url 'income_statement_drilldown' %}"
+            target="report_frame"
+            class="list-group-item list-group-item-action">
+                📑 قائمة الدخل التفصيلية (Drilldown)
+                </a>
+                </div>
+                <h6 class="text-muted mt-4 mb-2">تحليل الربحية</h6>
+                <div class="list-group mb-3">
+
+                    <a href="{% url 'breakeven_dashboard' %}?embed=1"
+                    target="report_frame"
+                    class="list-group-item list-group-item-action">
+                        ⚖️ نقطة التعادل والربحية
+                    </a>
+                <a href="{% url 'breakeven_simulator' %}?embed=1"
+                target="report_frame"
+                class="list-group-item list-group-item-action">
+                🧮 محاكي نقطة التعادل (تفاعلي)
+                </a>
+                </div>
+
+               <h6 class="text-muted mt-4 mb-2">التسعير</h6>
+            <div class="list-group mb-3">
+            <a href="/pricing/dashboard/?embed=1"
+                target="report_frame"
+                class="list-group-item list-group-item-action">
+                🧠 لوحة التسعير (سيناريوهات وسياسات)
+            </a>
+
+            <a href="/pricing/product/?embed=1"
+            target="report_frame"
+            class="list-group-item list-group-item-action">
+            🎯 تسعير منتج واحد (سيناريو)
+            </a>
+
+            <a href="/pricing/product/?embed=1" target="report_frame" class="list-group-item list-group-item-action">
+                🧾 تسعير منتج واحد (محاكاة)
+                </a>
+          </div>
+ 
+           </div>
+
+        <!-- منطقة عرض التقرير -->
+        <div class="col-md-9 col-lg-10 p-0">
+            <!-- يتم عرض التقرير داخل هذا الـ iframe -->
+            <iframe
+                id="reportFrame"
+                name="report_frame"
+                class="report-frame"
+                src="{% url 'raw_material_consumption_summary' %}">
+            </iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var iframe = document.getElementById("reportFrame");
+
+    // 1) عند تحميل الصفحة: لو فيه تقرير محفوظ، اعرضه بدل الافتراضي
+    var savedUrl = localStorage.getItem("current_report_url");
+    if (savedUrl) {
+        iframe.src = savedUrl;
+    } else {
+        // حفظ التقرير الافتراضي لأول مرة
+        var defaultUrl = "{% url 'raw_material_consumption_summary' %}";
+        localStorage.setItem("current_report_url", defaultUrl);
+    }
+
+    // 2) كل الروابط التي تفتح داخل الـ iframe
+    var reportLinks = document.querySelectorAll("a[target='report_frame']");
+
+    reportLinks.forEach(function (link) {
+        link.addEventListener("click", function () {
+            // حفظ رابط التقرير الذي تم الضغط عليه
+            localStorage.setItem("current_report_url", this.href);
+        });
+    });
+});
+</script>
+
+</body>
+</html>

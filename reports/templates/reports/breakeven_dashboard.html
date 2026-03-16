@@ -1,0 +1,479 @@
+{% load humanize %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title|default:"نقطة التعادل والربحية" }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --border:#e7e7ee;
+      --text:#111827;
+      --muted:#6b7280;
+
+      --primary:#2563eb;
+      --success:#16a34a;
+      --warning:#f59e0b;
+      --danger:#dc2626;
+
+      --soft-primary:#eff6ff;
+      --soft-success:#ecfdf5;
+      --soft-warning:#fffbeb;
+      --soft-danger:#fef2f2;
+    }
+
+    body{background:var(--bg); color:var(--text)}
+    .page-wrap{min-height:100vh}
+
+    .sidebar{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      height: calc(100vh - 24px);
+      position: sticky; top: 12px;
+      overflow:auto;
+      box-shadow: 0 10px 25px rgba(17,24,39,.06);
+    }
+
+    .period-btn{
+      border-radius:12px;
+      padding:.65rem .8rem;
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:.95rem;
+      transition: .18s ease;
+    }
+    .period-btn:hover{
+      transform: translateY(-1px);
+      box-shadow:0 10px 18px rgba(37,99,235,.12);
+    }
+
+    /* KPI Cards */
+    .card-kpi{
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:var(--card);
+      box-shadow: 0 10px 25px rgba(17,24,39,.06);
+      transition:.2s ease;
+      overflow:hidden;
+      position:relative;
+    }
+    .card-kpi:hover{
+      transform: translateY(-2px);
+      box-shadow:0 16px 30px rgba(17,24,39,.10);
+    }
+    .kpi-title{font-size:.82rem; color:var(--muted)}
+    .kpi-value{font-size:1.45rem; font-weight:900; letter-spacing:.2px}
+
+    /* شريط لوني أعلى البطاقة حسب النوع */
+    .kpi-bar{position:absolute; top:0; left:0; right:0; height:5px}
+    .bar-primary{background: linear-gradient(90deg, #60a5fa, #2563eb)}
+    .bar-success{background: linear-gradient(90deg, #86efac, #16a34a)}
+    .bar-warning{background: linear-gradient(90deg, #fde68a, #f59e0b)}
+    .bar-danger{background: linear-gradient(90deg, #fca5a5, #dc2626)}
+    .bar-slate{background: linear-gradient(90deg, #cbd5e1, #64748b)}
+
+    .table-wrap{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow: 0 10px 25px rgba(17,24,39,.06);
+    }
+
+    .table td, .table th{vertical-align:middle}
+    .table thead th{
+      font-weight:800;
+      color:#0f172a;
+      border-bottom:1px solid var(--border) !important;
+    }
+    .table tbody tr{transition:.15s ease}
+    .table tbody tr:hover{background:#f3f4f6}
+
+    .mono{font-variant-numeric: tabular-nums;}
+
+    .badge-soft{
+      background:#eef2ff; color:#3730a3; border:1px solid var(--border);
+      border-radius:999px; padding:6px 10px; font-weight:800;
+    }
+
+    .chip{
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.35rem .65rem; border-radius:999px;
+      font-weight:800; font-size:.8rem;
+      border:1px solid var(--border);
+    }
+    .chip-primary{background:var(--soft-primary); color:var(--primary)}
+    .chip-success{background:var(--soft-success); color:var(--success)}
+    .chip-warning{background:var(--soft-warning); color:var(--warning)}
+    .chip-danger{background:var(--soft-danger); color:var(--danger)}
+
+    .section-title{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.75rem 1rem .25rem 1rem;
+    }
+    .section-title .hint{color:var(--muted); font-size:.85rem}
+
+    tfoot tr td{
+      font-size: 1.05rem;
+      letter-spacing: .2px;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container-fluid px-3 py-3 page-wrap">
+  <div class="row g-3">
+
+    <!-- ===== Sidebar: الفترات ===== -->
+    <div class="col-12 col-lg-3 col-xl-2">
+      <div class="sidebar p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="fw-bold">🗓️ الفترات</div>
+          <a class="btn btn-sm btn-outline-secondary" href="?">الافتراضي</a>
+        </div>
+
+        <div class="d-grid gap-2">
+          {% for p in periods %}
+            <a class="btn {% if current_period and p.id == current_period.id %}btn-primary{% else %}btn-outline-primary{% endif %} period-btn"
+               href="?period={{ p.id }}&allocate={{ allocate }}">
+              <span class="fw-bold">{{ p.name }}</span>
+            </a>
+          {% empty %}
+            <div class="text-muted small">لا توجد فترات مسجلة.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Main ===== -->
+    <div class="col-12 col-lg-9 col-xl-10">
+
+      <!-- Header -->
+      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <div>
+          <h4 class="m-0">{{ title|default:"⚖️ تقرير نقطة التعادل والربحية" }}</h4>
+          <div class="text-muted small">
+            {% if current_period %}
+              الفترة: <b>{{ current_period.name }}</b>
+              <span class="badge-soft ms-2">
+                {{ current_period.start_date }} → {{ current_period.end_date }}
+              </span>
+            {% else %}
+              اختر فترة
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- طريقة توزيع الثابت -->
+        <form method="get" class="d-flex gap-2 align-items-center">
+          {% if current_period %}
+            <input type="hidden" name="period" value="{{ current_period.id }}">
+          {% endif %}
+          <label class="small text-muted">توزيع الثابت حسب</label>
+          <select name="allocate" class="form-select form-select-sm" style="width:170px">
+            <option value="sales" {% if allocate == 'sales' %}selected{% endif %}>المبيعات</option>
+            <option value="qty" {% if allocate == 'qty' %}selected{% endif %}>الكمية</option>
+            <option value="cogs" {% if allocate == 'cogs' %}selected{% endif %}>تكلفة الاستهلاك</option>
+            <option value="cm" {% if allocate == 'cm' %}selected{% endif %}>هامش المساهمة</option>
+          </select>
+          <button class="btn btn-sm btn-primary">تحديث</button>
+        </form>
+      </div>
+
+      {% if r %}
+
+      <!-- ===== KPI Cards ===== -->
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi">
+            <div class="kpi-bar bar-primary"></div>
+            <div class="card-body">
+              <div class="kpi-title">إجمالي المبيعات</div>
+              <div class="kpi-value mono">{{ r.sales|floatformat:0|intcomma }}</div>
+              <div class="mt-2"><span class="chip chip-primary">📈 Sales</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi">
+            <div class="kpi-bar bar-danger"></div>
+            <div class="card-body">
+              <div class="kpi-title">تكلفة الاستهلاك (COGS)</div>
+              <div class="kpi-value mono">{{ r.cogs_or_consumption|floatformat:0|intcomma }}</div>
+              <div class="mt-2"><span class="chip chip-danger">🧾 Cost</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi">
+            <div class="kpi-bar bar-warning"></div>
+            <div class="card-body">
+              <div class="kpi-title">مصروفات متغيرة</div>
+              <div class="kpi-value mono">{{ r.variable_expenses|floatformat:0|intcomma }}</div>
+              <div class="mt-2"><span class="chip chip-warning">⚡ Variable</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi">
+            <div class="kpi-bar bar-slate"></div>
+            <div class="card-body">
+              <div class="kpi-title">مصروفات ثابتة</div>
+              <div class="kpi-value mono">{{ r.fixed_expenses|floatformat:0|intcomma }}</div>
+              <div class="mt-2"><span class="chip" style="background:#f1f5f9;color:#334155;border:1px solid var(--border)">🏛️ Fixed</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi">
+            <div class="kpi-bar bar-success"></div>
+            <div class="card-body">
+              <div class="kpi-title">هامش المساهمة</div>
+              <div class="kpi-value mono">{{ r.contribution_margin|floatformat:0|intcomma }}</div>
+              <div class="mt-2"><span class="chip chip-success">✅ CM</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi">
+            <div class="kpi-bar bar-primary"></div>
+            <div class="card-body">
+              <div class="kpi-title">نسبة هامش المساهمة</div>
+              <div class="kpi-value mono">{{ r.cm_ratio|floatformat:4 }}</div>
+              <div class="mt-2"><span class="chip chip-primary">📌 Ratio</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi border-2">
+            <div class="kpi-bar bar-warning"></div>
+            <div class="card-body">
+              <div class="kpi-title">نقطة التعادل (قيمة مبيعات)</div>
+              <div class="kpi-value mono">{{ r.breakeven_sales|floatformat:0|intcomma }}</div>
+              <div class="mt-2"><span class="chip chip-warning">⚖️ BEP</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <div class="card card-kpi">
+            <div class="kpi-bar bar-success"></div>
+            <div class="card-body">
+              <div class="kpi-title">الربح (تقريبي)</div>
+              <div class="kpi-value mono">{{ r.profit|floatformat:0|intcomma }}</div>
+              <div class="mt-2"><span class="chip chip-success">💰 Profit</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== تفاصيل المصاريف (بعد البطاقات مباشرة) ===== -->
+      <div class="row g-3 mb-3">
+
+        <!-- مصروفات متغيرة -->
+        <div class="col-12 col-lg-6">
+          <div class="table-wrap p-2">
+            <div class="section-title">
+              <div class="fw-bold">
+                <span class="chip chip-primary">🟦 متغيرة</span>
+                تفاصيل المصروفات المتغيرة
+              </div>
+              <div class="hint">الإجمالي: <b class="mono">{{ r.variable_expenses|floatformat:0|intcomma }}</b></div>
+            </div>
+
+            <div class="table-responsive p-2">
+              <table class="table table-bordered table-striped mb-0 mono">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    <th style="width:110px">كود</th>
+                    <th>البند</th>
+                    <th style="width:200px">التصنيف</th>
+                    <th style="width:140px">الإجمالي</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for x in r.variable_expense_rows %}
+                    <tr>
+                      <td class="text-center">{{ x.item__code }}</td>
+                      <td class="fw-bold">{{ x.item__name }}</td>
+                      <td class="text-muted">{{ x.item__category__name }}</td>
+                      <td class="text-end fw-bold">{{ x.total|floatformat:0|intcomma }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="4" class="text-center text-muted">لا توجد مصروفات متغيرة ضمن الفترة.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- مصروفات ثابتة -->
+        <div class="col-12 col-lg-6">
+          <div class="table-wrap p-2">
+            <div class="section-title">
+              <div class="fw-bold">
+                <span class="chip" style="background:#f1f5f9;color:#334155;border:1px solid var(--border)">🟨 ثابتة</span>
+                تفاصيل المصروفات الثابتة
+              </div>
+              <div class="hint">الإجمالي: <b class="mono">{{ r.fixed_expenses|floatformat:0|intcomma }}</b></div>
+            </div>
+
+            <div class="table-responsive p-2">
+              <table class="table table-bordered table-striped mb-0 mono">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    <th style="width:110px">كود</th>
+                    <th>البند</th>
+                    <th style="width:200px">التصنيف</th>
+                    <th style="width:140px">الإجمالي</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for x in r.fixed_expense_rows %}
+                    <tr>
+                      <td class="text-center">{{ x.item__code }}</td>
+                      <td class="fw-bold">{{ x.item__name }}</td>
+                      <td class="text-muted">{{ x.item__category__name }}</td>
+                      <td class="text-end fw-bold">{{ x.total|floatformat:0|intcomma }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="4" class="text-center text-muted">لا توجد مصروفات ثابتة ضمن الفترة.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+      <!-- ===== /تفاصيل المصاريف ===== -->
+
+      <!-- ===== جدول ملخص نقطة التعادل ===== -->
+      <div class="table-wrap p-2 mb-3">
+        <div class="section-title">
+          <div class="fw-bold">🧾 ملخص نقطة التعادل</div>
+          <div class="hint">عرض سريع للأرقام الرئيسية</div>
+        </div>
+        <div class="table-responsive p-2">
+          <table class="table table-bordered mb-0 mono">
+            <tbody>
+              <tr>
+                <th style="width:55%">المبيعات</th>
+                <td class="text-end">{{ r.sales|floatformat:0|intcomma }}</td>
+              </tr>
+              <tr>
+                <th>تكلفة الاستهلاك (COGS)</th>
+                <td class="text-end">{{ r.cogs_or_consumption|floatformat:0|intcomma }}</td>
+              </tr>
+              <tr>
+                <th>مصروفات متغيرة</th>
+                <td class="text-end">{{ r.variable_expenses|floatformat:0|intcomma }}</td>
+              </tr>
+              <tr class="table-light">
+                <th>هامش المساهمة</th>
+                <td class="text-end fw-bold">{{ r.contribution_margin|floatformat:0|intcomma }}</td>
+              </tr>
+              <tr>
+                <th>مصروفات ثابتة</th>
+                <td class="text-end">{{ r.fixed_expenses|floatformat:0|intcomma }}</td>
+              </tr>
+              <tr class="table-light">
+                <th>نقطة التعادل (مبيعات)</th>
+                <td class="text-end fw-bold">{{ r.breakeven_sales|floatformat:0|intcomma }}</td>
+              </tr>
+              <tr class="table-success">
+                <th>الربح</th>
+                <td class="text-end fw-bold">{{ r.profit|floatformat:0|intcomma }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== جدول الربحية حسب الصنف ===== -->
+      <div class="table-wrap p-2">
+        <div class="section-title">
+          <div class="fw-bold">📦 الربحية حسب الصنف</div>
+          <div class="hint">الإجمالي بالأسفل</div>
+        </div>
+
+        <div class="table-responsive p-2">
+          <table class="table table-bordered table-striped mb-0 mono">
+            <thead class="table-secondary text-center">
+              <tr>
+                <th style="width:90px">ID</th>
+                <th style="width:260px">المنتج</th>
+                <th style="width:120px">الكمية</th>
+                <th>المبيعات</th>
+                <th>تكلفة الاستهلاك</th>
+                <th>هامش المساهمة</th>
+                <th>ثابت موزّع</th>
+                <th>الربح</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for row in r.per_sku %}
+                <tr>
+                  <td class="text-center">{{ row.product_id }}</td>
+                  <td>
+                    <strong>{{ row.product_code }}</strong><br>
+                    <small class="text-muted">{{ row.product_name }}</small>
+                  </td>
+                  <td class="text-end">{{ row.qty|floatformat:3|intcomma }}</td>
+                  <td class="text-end">{{ row.sales|floatformat:0|intcomma }}</td>
+                  <td class="text-end">{{ row.consumption_cost|floatformat:0|intcomma }}</td>
+                  <td class="text-end">{{ row.contribution_margin|floatformat:0|intcomma }}</td>
+                  <td class="text-end">{{ row.fixed_allocated|floatformat:0|intcomma }}</td>
+                  <td class="text-end fw-bold">{{ row.profit|floatformat:0|intcomma }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="8" class="text-center text-muted">لا توجد بيانات.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+            <tfoot>
+              <tr class="table-dark fw-bold">
+                <td colspan="3" class="text-center">الإجمالي</td>
+                <td class="text-end">{{ totals.sales|floatformat:0|intcomma }}</td>
+                <td class="text-end">{{ totals.consumption_cost|floatformat:0|intcomma }}</td>
+                <td class="text-end">{{ totals.contribution_margin|floatformat:0|intcomma }}</td>
+                <td class="text-end">{{ totals.fixed_allocated|floatformat:0|intcomma }}</td>
+                <td class="text-end">{{ totals.profit|floatformat:0|intcomma }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {% else %}
+        <div class="alert alert-info text-center">
+          لا توجد بيانات لهذه الفترة.
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,496 @@
+{% load static %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>💰 إدخال المبيعات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body{background:#f4f6f9}
+    .card-soft{border:1px solid #e6e6e6;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    .mini{font-size:.85rem;color:#6c757d}
+    .sticky-actions{position:sticky;bottom:0;background:#f4f6f9;padding:10px 0}
+    .table td, .table th{vertical-align:middle}
+    .num{font-variant-numeric:tabular-nums}
+
+    .total-card{
+      background: linear-gradient(135deg,#1f2933,#111827);
+      border-radius:18px;
+    }
+    .total-title{
+      font-size:.9rem;
+      color:#cbd5e1;
+      letter-spacing:.5px;
+    }
+    .total-amount{
+      font-size:2.8rem;
+      font-weight:800;
+      color:#ffffff;
+      margin-top:6px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container py-3">
+
+  <div class="card card-soft p-3 mb-3">
+    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+      <div>
+        <div class="h5 m-0">💰 إدخال المبيعات</div>
+        <div class="mini">داخل Portal — حفظ دفعة واحدة</div>
+      </div>
+
+      <div class="d-flex gap-2 align-items-center">
+        <select id="periodSel" class="form-select">
+          {% for p in periods %}
+            <option value="{{p.id}}" {% if period and p.id == period.id %}selected{% endif %}>
+              {{p.year}}-{{p.month|stringformat:"02d"}}
+            </option>
+          {% endfor %}
+        </select>
+
+        <button class="btn btn-outline-secondary" id="btnReload" type="button">🔄 تحديث</button>
+        <button class="btn btn-primary" id="btnSave" type="button">💾 حفظ</button>
+        <button class="btn btn-outline-success" id="btnExport" type="button">⬇️ تصدير Excel</button>
+          <label class="btn btn-outline-primary m-0">
+            ⬆️ استيراد Excel
+            <input type="file" id="fileImport" accept=".xlsx" hidden>
+          </label>
+      </div>
+    </div>
+
+    <!-- ✅ بطاقة إجمالي المبيعات -->
+    <div class="row mt-3">
+      <div class="col-md-4 ms-auto">
+        <div class="card shadow-lg border-0 total-card">
+          <div class="card-body text-center py-4">
+            <div class="total-title">إجمالي المبيعات</div>
+            <div class="total-amount num" id="grandTotalCard">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-2" id="lockBar" style="display:none;">
+      <div class="alert alert-warning m-0">⛔ الفترة مقفلة — ممنوع الحفظ</div>
+    </div>
+
+    <!-- ✅ Progress أثناء الحفظ -->
+    <div class="mt-2" id="saveProgressWrap" style="display:none;">
+      <div class="progress" style="height: 10px;">
+        <div id="saveProgressBar"
+             class="progress-bar progress-bar-striped progress-bar-animated"
+             role="progressbar" style="width:0%"></div>
+      </div>
+      <div class="mini mt-1" id="saveProgressText">0%</div>
+    </div>
+
+    <!-- ✅ ضروري لـ CSRF -->
+    <form style="display:none">{% csrf_token %}</form>
+  </div>
+
+  <div class="card card-soft p-2">
+    <div class="table-responsive">
+      <table class="table table-bordered bg-white m-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:12%">الكود</th>
+            <th>المنتج</th>
+            <th style="width:14%">الوحدة</th>
+            <th style="width:14%">الكمية</th>
+            <th style="width:14%">سعر الوحدة</th>
+            <th style="width:16%">الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot class="table-light">
+          <tr>
+            <th colspan="5" class="text-end">إجمالي المبيعات</th>
+            <th class="num" id="grandTotal">0.00</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="sticky-actions d-flex justify-content-between align-items-center">
+      <div class="mini" id="status">جاهز</div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-danger" id="btnClearZero" type="button">🧹 تصفير الكل (محلي)</button>
+        <button class="btn btn-primary" id="btnSave2" type="button">💾 حفظ</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ====== إعدادات من السيرفر ======
+  const SALES_PERIOD_ID = "{{ period.id|default:'' }}";
+  const SALES_API_GET   = "/portal/api/sales/grid/";
+  const SALES_API_SAVE  = "/portal/api/sales/grid/save/";
+</script>
+
+<script>
+(function () {
+  const tbody = document.getElementById("tbody");
+  const periodSel = document.getElementById("periodSel");
+  const btnReload = document.getElementById("btnReload");
+  const btnSave = document.getElementById("btnSave");
+  const btnSave2 = document.getElementById("btnSave2");
+  const btnClearZero = document.getElementById("btnClearZero");
+  const lockBar = document.getElementById("lockBar");
+  const statusEl = document.getElementById("status");
+  const grandTotalEl = document.getElementById("grandTotal");
+
+
+  const btnExport = document.getElementById("btnExport");
+  const fileImport = document.getElementById("fileImport");
+
+  btnExport.addEventListener("click", () => {
+    const pid = periodSel.value;
+    window.location.href = `/portal/api/sales/export-xlsx/?period_id=${encodeURIComponent(pid)}`;
+  });
+
+  fileImport.addEventListener("change", async () => {
+    const file = fileImport.files[0];
+    if (!file) return;
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const csrftoken = getCookie("csrftoken");
+    setStatus("⬆️ استيراد Excel...");
+
+    let data = null;
+    try{
+      const r = await fetch("/portal/api/sales/import-xlsx/", {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+        headers: { "X-CSRFToken": csrftoken },
+      });
+      data = await r.json();
+    }catch(e){
+      setStatus("❌ خطأ اتصال");
+      return;
+    }
+
+    if (!data || !data.ok){
+      setStatus("❌ " + (data?.error || "فشل الاستيراد"));
+      return;
+    }
+
+    rows = data.rows || [];
+    setStatus(`✅ تم الاستيراد (${data.count}) — اضغط حفظ`);
+    render();
+
+    fileImport.value = "";
+  });
+
+  // Progress elements
+  const saveProgressWrap = document.getElementById("saveProgressWrap");
+  const saveProgressBar  = document.getElementById("saveProgressBar");
+  const saveProgressText = document.getElementById("saveProgressText");
+
+  let isLocked = false;
+  let rows = [];
+
+  let progTimer = null;
+  let progValue = 0;
+
+  function num(v) {
+    const x = parseFloat((v ?? "").toString().replaceAll(",", "") || "0");
+    return isNaN(x) ? 0 : x;
+  }
+
+  function setStatus(t) { statusEl.textContent = t; }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
+  }
+
+  function formatMoney(value, decimals = 2) {
+    const n = Number(value || 0);
+    return n.toLocaleString("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }
+
+  // ✅ تنسيق الرقم داخل input عند الخروج (فواصل + رقمين عشريين)
+  function formatInputTo2Decimals(input) {
+    const raw = (input.value ?? "").toString().replaceAll(",", "");
+    const n = parseFloat(raw);
+    input.value = isNaN(n) ? "0.00" : formatMoney(n);
+  }
+
+  let lastGrand = 0;
+
+  function animateNumber(el, from, to, duration = 450) {
+    if (!el) return;
+
+    const start = performance.now();
+    const diff = to - from;
+
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const current = from + diff * eased;
+      el.textContent = formatMoney(current);
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function calcLineTotal(r){
+    const lineTotal = num(r.quantity) * num(r.unit_price);
+    r.line_total = lineTotal; // نخزن رقم
+    return lineTotal;
+  }
+
+  function updateGrandDisplay(grand){
+    // جدول
+    grandTotalEl.textContent = formatMoney(grand);
+
+    // بطاقة + أنيميشن
+    const cardEl = document.getElementById("grandTotalCard");
+    if (cardEl) animateNumber(cardEl, lastGrand, grand, 450);
+
+    lastGrand = grand;
+  }
+
+  function progressStart() {
+    progValue = 1;
+    saveProgressWrap.style.display = "block";
+    saveProgressBar.style.width = progValue + "%";
+    saveProgressText.textContent = progValue + "%";
+
+    clearInterval(progTimer);
+    progTimer = setInterval(() => {
+      if (progValue < 92) {
+        progValue += (progValue < 30 ? 3 : progValue < 60 ? 2 : 1);
+        if (progValue > 92) progValue = 92;
+        saveProgressBar.style.width = progValue + "%";
+        saveProgressText.textContent = progValue + "%";
+      }
+    }, 120);
+  }
+
+  function progressFinish(ok=true, msg="") {
+    clearInterval(progTimer);
+    progTimer = null;
+
+    if (ok) {
+      progValue = 100;
+      saveProgressBar.style.width = "100%";
+      saveProgressText.textContent = "100% ✅ " + (msg || "");
+      setTimeout(() => {
+        saveProgressWrap.style.display = "none";
+        saveProgressBar.style.width = "0%";
+        saveProgressText.textContent = "0%";
+      }, 1500);
+    } else {
+      saveProgressText.textContent = msg || "❌ فشل";
+    }
+  }
+
+  function render() {
+    tbody.innerHTML = "";
+    let grand = 0;
+
+    rows.forEach((r, idx) => {
+      grand += calcLineTotal(r);
+
+      const tr = document.createElement("tr");
+      tr.setAttribute("data-i", String(idx));
+
+      // ✅ نعرض داخل الحقول بقيم منسقة دائمًا (فواصل + رقمين عشريين)
+      const qtyDisp = formatMoney(num(r.quantity));
+      const priceDisp = formatMoney(num(r.unit_price));
+
+      tr.innerHTML = `
+        <td class="num">${escapeHtml(r.code || "")}</td>
+        <td>${escapeHtml(r.name || "")}</td>
+        <td class="num">${escapeHtml(r.unit_name || "")}</td>
+        <td>
+          <input ${isLocked ? "disabled" : ""} class="form-control form-control-sm num"
+              data-k="quantity" data-i="${idx}" value="${escapeHtml(qtyDisp)}">
+        </td>
+        <td>
+          <input ${isLocked ? "disabled" : ""} class="form-control form-control-sm num"
+              data-k="unit_price" data-i="${idx}" value="${escapeHtml(priceDisp)}">
+        </td>
+        <td class="num js-line-total">${formatMoney(r.line_total || 0)}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    // ✅ عرض منسق دائمًا
+    grandTotalEl.textContent = formatMoney(grand);
+    const cardEl = document.getElementById("grandTotalCard");
+    if (cardEl) cardEl.textContent = formatMoney(grand);
+    lastGrand = grand;
+
+    lockBar.style.display = isLocked ? "block" : "none";
+    btnSave.disabled = isLocked;
+    btnSave2.disabled = isLocked;
+  }
+
+  // ✅ تحديث سطر واحد + الإجمالي العام بدون إعادة رسم (يحافظ على المؤشر)
+  function refreshOneRowAndGrand(idx){
+    const r = rows[idx];
+
+    if (r){
+      const lineTotal = calcLineTotal(r);
+      const tr = tbody.querySelector(`tr[data-i="${idx}"]`);
+      if (tr){
+        const tdTotal = tr.querySelector(".js-line-total");
+        if (tdTotal) tdTotal.textContent = formatMoney(lineTotal);
+      }
+    }
+
+    let grand = 0;
+    rows.forEach(rr => { grand += calcLineTotal(rr); });
+    updateGrandDisplay(grand);
+  }
+
+  async function load(periodId) {
+    setStatus("⏳ تحميل...");
+    const url = `${SALES_API_GET}?period_id=${encodeURIComponent(periodId)}`;
+
+    const r = await fetch(url, { credentials: "same-origin" });
+    const data = await r.json();
+
+    if (!data.ok) {
+      setStatus("❌ " + (data.error || "خطأ"));
+      return;
+    }
+
+    rows = data.rows || [];
+    isLocked = !!data.is_locked;
+
+    setStatus(isLocked ? "⛔ الفترة مقفلة" : "✅ جاهز");
+    render();
+  }
+
+  async function save(periodId) {
+    if (isLocked) return;
+
+    setStatus("💾 حفظ...");
+    progressStart();
+
+    // ✅ نرسل للسيرفر أرقام خام (بدون فواصل) + رقمين عشريين
+    const payload = rows.map(r => ({
+      line_id: r.line_id,
+      product_id: r.product_id,
+      unit_id: r.unit_id,
+      quantity: num(r.quantity).toFixed(2),
+      unit_price: num(r.unit_price).toFixed(2),
+    }));
+
+    const fd = new FormData();
+    fd.append("period_id", periodId);
+    fd.append("rows_json", JSON.stringify(payload));
+
+    const csrftoken = getCookie("csrftoken");
+
+    let data = null;
+    try {
+      const r = await fetch(SALES_API_SAVE, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+        headers: { "X-CSRFToken": csrftoken },
+      });
+      data = await r.json();
+    } catch (e) {
+      progressFinish(false, "❌ خطأ اتصال");
+      setStatus("❌ خطأ اتصال");
+      return;
+    }
+
+    if (!data || !data.ok) {
+      progressFinish(false, "❌ " + (data?.error || "فشل الحفظ"));
+      setStatus("❌ " + (data?.error || "فشل الحفظ"));
+      return;
+    }
+
+    progressFinish(true, `تم الحفظ (${data.saved_count})`);
+    setStatus(`✅ تم الحفظ (${data.saved_count})`);
+    await load(periodId);
+  }
+
+  // ✅ أثناء الكتابة: لا نعمل render() حتى لا يهرب المؤشر
+  tbody.addEventListener("input", (e) => {
+    const inp = e.target.closest("input[data-k]");
+    if (!inp) return;
+
+    const k = inp.getAttribute("data-k");
+    const i = parseInt(inp.getAttribute("data-i"), 10);
+    if (!rows[i]) return;
+
+    // نخزن كما هو أثناء الكتابة
+    rows[i][k] = inp.value;
+
+    // تحديث سريع للإجماليات فقط
+    refreshOneRowAndGrand(i);
+  });
+
+  // ✅ عند الخروج من الحقل: ننسّق input نفسه إلى 2 decimals + فواصل
+  tbody.addEventListener("blur", (e) => {
+    const inp = e.target.closest("input[data-k]");
+    if (!inp) return;
+
+    formatInputTo2Decimals(inp);
+
+    const k = inp.getAttribute("data-k");
+    const i = parseInt(inp.getAttribute("data-i"), 10);
+    if (!rows[i]) return;
+
+    rows[i][k] = inp.value;
+    refreshOneRowAndGrand(i);
+  }, true);
+
+  btnReload.addEventListener("click", () => load(periodSel.value));
+  btnSave.addEventListener("click", () => save(periodSel.value));
+  btnSave2.addEventListener("click", () => save(periodSel.value));
+
+  btnClearZero.addEventListener("click", () => {
+    if (isLocked) return;
+    if (!confirm("هل تريد تصفير كل الكميات والأسعار (محلياً)؟")) return;
+
+    rows = rows.map(r => ({ ...r, quantity: "0.00", unit_price: "0.00" }));
+    render();
+  });
+
+  periodSel.addEventListener("change", () => {
+    const pid = periodSel.value;
+    const u = new URL(window.location.href);
+    u.searchParams.set("period", pid);
+    window.location.href = u.toString();
+  });
+
+  // init
+  const initPeriod = SALES_PERIOD_ID || periodSel.value;
+  load(initPeriod);
+
+})();
+</script>
+
+</body>
+</html>
